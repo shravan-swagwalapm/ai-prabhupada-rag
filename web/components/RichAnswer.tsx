@@ -208,7 +208,8 @@ type Block =
   | { type: "quote"; text: string }
   | { type: "paragraph"; text: string }
   | { type: "mantra"; text: string }
-  | { type: "bullet-list"; items: string[] };
+  | { type: "bullet-list"; items: string[] }
+  | { type: "verse-card"; lines: string[]; translation?: string; ref?: string };
 
 function parseBlocks(text: string): Block[] {
   // Pre-process: ensure markdown headers start on their own lines.
@@ -244,6 +245,26 @@ function parseBlocks(text: string): Block[] {
     if (!trimmed) {
       flushParagraph();
       flushBullets();
+      continue;
+    }
+
+    // Horizontal rules (---, ***, ___) — skip them (just section dividers)
+    if (/^[-*_]{3,}$/.test(trimmed)) {
+      flushParagraph();
+      flushBullets();
+      continue;
+    }
+
+    // Blockquote lines (> text) — treat as verse if Sanskrit, else as quote
+    if (trimmed.startsWith("> ")) {
+      flushParagraph();
+      flushBullets();
+      const inner = trimmed.slice(2).trim();
+      if (isSanskritVerse(inner)) {
+        blocks.push({ type: "verse", text: inner });
+      } else {
+        blocks.push({ type: "translation", text: inner.replace(/^[""\u201c]|[""\u201d]$/g, "") });
+      }
       continue;
     }
 
@@ -317,7 +338,67 @@ function parseBlocks(text: string): Block[] {
 
   flushParagraph();
   flushBullets();
-  return blocks;
+  return mergeVerseCards(blocks);
+}
+
+/**
+ * Post-process blocks: merge consecutive verse, translation, verse-ref,
+ * and quote blocks into unified "verse-card" blocks so they render as
+ * a single visual unit.
+ */
+function mergeVerseCards(blocks: Block[]): Block[] {
+  const merged: Block[] = [];
+  let i = 0;
+
+  while (i < blocks.length) {
+    const block = blocks[i];
+
+    // Start a card when we hit a verse or quote block
+    if (block.type === "verse" || block.type === "quote") {
+      const lines: string[] = [block.type === "quote" ? `\u201c${block.text}\u201d` : block.text];
+      let translation: string | undefined;
+      let ref: string | undefined;
+      i++;
+
+      // Consume consecutive verse/quote/translation/verse-ref blocks
+      while (i < blocks.length) {
+        const next = blocks[i];
+        if (next.type === "verse" || next.type === "quote") {
+          lines.push(next.type === "quote" ? `\u201c${next.text}\u201d` : next.text);
+          i++;
+        } else if (next.type === "translation" && !translation) {
+          translation = next.text;
+          i++;
+        } else if (next.type === "verse-ref" && !ref) {
+          ref = next.text;
+          i++;
+        } else {
+          break;
+        }
+      }
+
+      merged.push({ type: "verse-card", lines, translation, ref });
+      continue;
+    }
+
+    // Standalone translation or ref that wasn't preceded by a verse —
+    // wrap them in a card too so they always get the box treatment
+    if (block.type === "translation") {
+      merged.push({ type: "verse-card", lines: [], translation: block.text });
+      i++;
+      continue;
+    }
+    if (block.type === "verse-ref") {
+      merged.push({ type: "verse-card", lines: [], ref: block.text });
+      i++;
+      continue;
+    }
+
+    merged.push(block);
+    i++;
+  }
+
+  return merged;
 }
 
 // ─── Voice Mode Splitter ──────────────────────────────────────────
@@ -527,66 +608,73 @@ export default function RichAnswer({ text, mode = "text", isStreaming }: Props) 
                 {block.text}
               </h4>
             );
+          case "verse-card":
+            return (
+              <div
+                key={i}
+                className="verse-card my-6 rounded-xl overflow-hidden"
+                style={{
+                  border: "1px solid rgba(224,112,80,0.25)",
+                  background: "linear-gradient(135deg, rgba(22,16,9,0.9), rgba(28,21,14,0.6))",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(224,112,80,0.08)",
+                }}
+              >
+                {/* Decorative top bar */}
+                <div
+                  style={{
+                    height: 2,
+                    background: "linear-gradient(to right, transparent, var(--vermillion-bright), var(--gold-dim), var(--vermillion-bright), transparent)",
+                    opacity: 0.5,
+                  }}
+                />
+                <div className="px-6 py-5 text-center space-y-3">
+                  {/* Sanskrit verse lines */}
+                  {block.lines.length > 0 && (
+                    <div className="space-y-1">
+                      {block.lines.map((line, j) => (
+                        <p
+                          key={j}
+                          className="font-serif italic leading-relaxed text-base"
+                          style={{ color: "var(--vermillion-bright)" }}
+                        >
+                          {line}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                  {/* English translation */}
+                  {block.translation && (
+                    <p
+                      className="font-serif leading-relaxed text-base pt-2"
+                      style={{
+                        color: "var(--text-primary)",
+                        fontWeight: 600,
+                        borderTop: block.lines.length > 0 ? "1px solid rgba(201,168,76,0.15)" : undefined,
+                        paddingTop: block.lines.length > 0 ? "0.75rem" : undefined,
+                      }}
+                    >
+                      &ldquo;{block.translation}&rdquo;
+                    </p>
+                  )}
+                  {/* Verse reference */}
+                  {block.ref && (
+                    <p
+                      className="text-xs font-sans uppercase tracking-widest pt-1"
+                      style={{ color: "var(--gold-dim)" }}
+                    >
+                      {block.ref}
+                    </p>
+                  )}
+                </div>
+              </div>
+            );
+          /* Legacy fallbacks — these shouldn't appear after mergeVerseCards,
+             but keep them so the compiler doesn't complain */
           case "verse":
-            return (
-              <div
-                key={i}
-                className="verse-block my-5 px-6 py-5 rounded-xl text-center"
-                style={{
-                  borderLeft: "3px solid rgba(224,112,80,0.6)",
-                  background: "linear-gradient(to right, rgba(22,16,9,0.8), rgba(28,21,14,0.4))",
-                }}
-              >
-                <p
-                  className="font-serif italic leading-loose text-base"
-                  style={{ color: "var(--vermillion-bright)" }}
-                >
-                  {block.text}
-                </p>
-              </div>
-            );
           case "translation":
-            return (
-              <div
-                key={i}
-                className="translation-block px-6 -mt-3 text-center"
-              >
-                <p
-                  className="font-serif leading-relaxed text-lg"
-                  style={{ color: "var(--text-primary)", fontWeight: 600 }}
-                >
-                  &ldquo;{block.text}&rdquo;
-                </p>
-              </div>
-            );
           case "quote":
-            return (
-              <div
-                key={i}
-                className="verse-block my-5 px-6 py-5 rounded-xl text-center"
-                style={{
-                  borderLeft: "3px solid rgba(224,112,80,0.6)",
-                  background: "linear-gradient(to right, rgba(22,16,9,0.8), rgba(28,21,14,0.4))",
-                }}
-              >
-                <p
-                  className="font-serif italic leading-loose text-base"
-                  style={{ color: "var(--vermillion-bright)" }}
-                >
-                  &ldquo;{block.text}&rdquo;
-                </p>
-              </div>
-            );
           case "verse-ref":
-            return (
-              <p
-                key={i}
-                className="text-sm font-sans uppercase tracking-wider text-center -mt-3 font-medium"
-                style={{ color: "var(--text-muted)" }}
-              >
-                {block.text}
-              </p>
-            );
+            return null;
           case "mantra":
             return (
               <div
