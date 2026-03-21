@@ -117,9 +117,16 @@ def load_faiss_index():
         if _INDEX is None and VECTORS_FILE.exists():
             try:
                 logger.info("Rebuilding FAISS index from %s...", VECTORS_FILE)
-                with open(VECTORS_META_FILE) as mf:
-                    vmeta = json.load(mf)
-                vectors = np.fromfile(str(VECTORS_FILE), dtype=np.float32).reshape(vmeta["shape"])
+                raw = np.fromfile(str(VECTORS_FILE), dtype=np.float32)
+                # Shape metadata: try JSON file, fallback to known dimensions
+                dim = 1024  # Voyage AI voyage-3-large embedding dimension
+                try:
+                    with open(VECTORS_META_FILE) as mf:
+                        vmeta = json.load(mf)
+                    dim = vmeta["shape"][1]
+                except Exception:
+                    logger.info("vectors_meta.json unavailable, using default dim=%d", dim)
+                vectors = raw.reshape(-1, dim)
                 _INDEX = _build_index_from_vectors(vectors)
             except Exception as e:
                 logger.error("Failed to rebuild FAISS index: %s", e, exc_info=True)
