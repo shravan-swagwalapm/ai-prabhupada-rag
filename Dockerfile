@@ -1,6 +1,11 @@
 # Stage 1: Build frontend
 FROM node:20-slim AS frontend
 WORKDIR /app/web
+
+# Pass NEXT_PUBLIC_ env vars as build args so they're inlined at build time
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
+
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web/ ./
