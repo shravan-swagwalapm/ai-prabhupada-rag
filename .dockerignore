@@ -1,0 +1,15 @@
+embeddings/
+embeddings_optimized/
+logs/
+.env
+.env.*
+web/node_modules/
+web/.next/
+web/out/
+.superpowers/
+*.log
+*.md
+!README.md
+tests/
+__pycache__/
+.git/
