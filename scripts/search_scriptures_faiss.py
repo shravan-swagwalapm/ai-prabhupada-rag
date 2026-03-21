@@ -61,8 +61,30 @@ def _get_voyage_api_key() -> str:
     return api_key
 
 
+VECTORS_FILE = INDEX_DIR / "vectors.npy"
+
+
+def _build_index_from_vectors(vectors: np.ndarray, nlist: int = 100) -> faiss.Index:
+    """Build FAISS IVF index from raw numpy vectors (portable across platforms)."""
+    n, d = vectors.shape
+    logger.info("Building FAISS IVF%d index from %d vectors (%dD)...", nlist, n, d)
+    start = time.time()
+    quantizer = faiss.IndexFlatIP(d)
+    index = faiss.IndexIVFFlat(quantizer, d, nlist, faiss.METRIC_INNER_PRODUCT)
+    index.train(vectors)
+    index.add(vectors)
+    index.nprobe = 10
+    elapsed = time.time() - start
+    logger.info("Built FAISS index in %.2fs", elapsed)
+    return index
+
+
 def load_faiss_index():
-    """Load FAISS index once with double-checked locking for thread safety."""
+    """Load FAISS index once with double-checked locking for thread safety.
+
+    Tries faiss.read_index first (fast). If that fails (cross-platform binary
+    incompatibility), rebuilds from vectors.npy (portable numpy format, ~1s).
+    """
     global _INDEX, _METADATA, _LOADED
 
     # Fast path — no lock needed once loaded
@@ -74,32 +96,55 @@ def load_faiss_index():
         if _LOADED:
             return _INDEX, _METADATA
 
-        if not INDEX_FILE.exists() or not METADATA_FILE.exists():
+        if not METADATA_FILE.exists():
+            logger.error("FAISS metadata not found at %s", METADATA_FILE)
+            return None, None
+
+        start = time.time()
+
+        # Try loading pre-built index first (fastest path)
+        if INDEX_FILE.exists():
+            try:
+                logger.info("Loading FAISS index from %s...", INDEX_FILE)
+                _INDEX = faiss.read_index(str(INDEX_FILE))
+                _INDEX.nprobe = 10
+            except Exception as e:
+                logger.warning("Pre-built FAISS index failed: %s", e)
+                _INDEX = None
+
+        # Fallback: rebuild from portable vectors.npy
+        if _INDEX is None and VECTORS_FILE.exists():
+            try:
+                logger.info("Rebuilding FAISS index from %s...", VECTORS_FILE)
+                vectors = np.load(str(VECTORS_FILE))
+                _INDEX = _build_index_from_vectors(vectors)
+            except Exception as e:
+                logger.error("Failed to rebuild FAISS index: %s", e, exc_info=True)
+                _INDEX = None
+                _METADATA = None
+                return None, None
+
+        if _INDEX is None:
             logger.error(
-                "FAISS index not found at %s. Run: python3 scripts/build_faiss_index.py",
-                INDEX_FILE,
+                "No FAISS index or vectors.npy found in %s. "
+                "Run: python3 scripts/build_faiss_index.py",
+                INDEX_DIR,
             )
             return None, None
 
-        logger.info("Loading FAISS index from %s...", INDEX_FILE)
-        start = time.time()
-
+        # Load metadata
         try:
-            _INDEX = faiss.read_index(str(INDEX_FILE))
-            _INDEX.nprobe = 10  # Search 10 clusters (balance speed/accuracy)
-
             with open(METADATA_FILE) as f:
                 _METADATA = json.load(f)
-
-            elapsed = time.time() - start
-            logger.info("Loaded %d vectors in %.2fs", _INDEX.ntotal, elapsed)
-            _LOADED = True
-
         except Exception as e:
-            logger.error("Failed to load FAISS index: %s", e, exc_info=True)
+            logger.error("Failed to load metadata: %s", e)
             _INDEX = None
             _METADATA = None
             return None, None
+
+        elapsed = time.time() - start
+        logger.info("Loaded %d vectors in %.2fs", _INDEX.ntotal, elapsed)
+        _LOADED = True
 
     return _INDEX, _METADATA
 
