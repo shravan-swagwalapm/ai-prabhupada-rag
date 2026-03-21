@@ -154,6 +154,8 @@ def get_quota(user_id: str) -> Dict[str, int]:
 
 def decrement_quota(user_id: str, mode: str) -> bool:
     """Decrement quota for a mode ('text' or 'voice'). Returns True if successful."""
+    if mode not in ("text", "voice"):
+        raise ValueError(f"Invalid quota mode: {mode!r}")
     col = "text_quota" if mode == "text" else "voice_quota"
     conn = _get_conn()
     try:

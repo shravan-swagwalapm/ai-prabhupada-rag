@@ -23,11 +23,11 @@ JWT_EXPIRY_DAYS = 30
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
-# Production safety: warn loudly if running with default secret + real Google auth
+# Production safety: fail fast if running with default secret + real Google auth
 if JWT_SECRET == "dev-secret" and GOOGLE_CLIENT_ID:
-    logger.critical(
-        "JWT_SECRET is set to default 'dev-secret' but GOOGLE_CLIENT_ID is configured. "
-        "Set a real JWT_SECRET in production! Tokens are forgeable."
+    raise RuntimeError(
+        "FATAL: JWT_SECRET is 'dev-secret' but GOOGLE_CLIENT_ID is set. "
+        "Set a real JWT_SECRET in production — tokens are forgeable with the default."
     )
 
 

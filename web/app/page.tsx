@@ -167,7 +167,7 @@ export default function Home() {
             />
           )}
           <a
-            href="/history"
+            href="/history/"
             className="p-2.5 rounded-xl transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
             style={{
               border: "1px solid transparent",

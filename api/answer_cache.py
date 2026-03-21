@@ -136,9 +136,16 @@ class SemanticAnswerCache:
         embedding_blob = emb.tobytes()
 
         with self._lock:
-            # LRU eviction — remove oldest entry if at capacity
+            # LRU eviction — remove least-recently-used entry if at capacity
             if len(self._entries) >= MAX_CACHE_SIZE:
-                oldest_idx = len(self._entries) - 1  # entries loaded in last_used DESC order
+                # Find entry with oldest last_used_at (or earliest index if no timestamp)
+                oldest_idx = 0
+                oldest_ts = self._entries[0].get("last_used_at", "")
+                for i, entry in enumerate(self._entries):
+                    ts = entry.get("last_used_at", "")
+                    if ts < oldest_ts:
+                        oldest_ts = ts
+                        oldest_idx = i
                 oldest_entry = self._entries[oldest_idx]
                 try:
                     delete_cache_entry(oldest_entry["id"])
@@ -147,7 +154,7 @@ class SemanticAnswerCache:
                 self._entries.pop(oldest_idx)
                 if self._embeddings is not None:
                     self._embeddings = np.delete(self._embeddings, oldest_idx, axis=0)
-                logger.debug("Evicted oldest cache entry")
+                logger.debug("Evicted LRU cache entry: %s", oldest_entry.get("question", "")[:40])
 
             # Save to SQLite
             cache_id = save_cache_entry(
@@ -155,6 +162,7 @@ class SemanticAnswerCache:
             )
 
             # Add to in-memory arrays
+            from datetime import datetime
             new_entry = {
                 "id": cache_id,
                 "question": question,
@@ -162,6 +170,7 @@ class SemanticAnswerCache:
                 "audio_id": audio_id,
                 "mode": mode,
                 "passages_json": passages_json,
+                "last_used_at": datetime.utcnow().isoformat(),
             }
 
             if self._embeddings is None:

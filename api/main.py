@@ -219,7 +219,8 @@ app.add_middleware(
 async def rate_limit_middleware(request: Request, call_next):
     """Apply rate limiting to expensive query endpoints."""
     if request.url.path in ("/api/query", "/api/query/stream"):
-        client_ip = (request.client.host if request.client else "unknown")
+        forwarded = request.headers.get("x-forwarded-for")
+        client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
         if _is_rate_limited(client_ip):
             logger.warning("Rate limit hit for IP %s on %s", client_ip, request.url.path)
             return JSONResponse(
@@ -508,7 +509,7 @@ async def query_scriptures(
 
     # Voice synthesis (background)
     if req.include_voice and ai_answer:
-        audio_id = str(uuid.uuid4())[:8]
+        audio_id = str(uuid.uuid4())
         _store_audio_job(audio_id, "pending")
         background_tasks.add_task(generate_audio_background, audio_id, ai_answer)
 
@@ -653,7 +654,7 @@ async def query_stream(
         audio_id = None
         if include_voice and full_answer:
             answer_text = "".join(full_answer)
-            audio_id = str(uuid.uuid4())[:8]
+            audio_id = str(uuid.uuid4())
 
             if _elevenlabs_breaker.is_open():
                 _store_audio_job(audio_id, "unavailable")
