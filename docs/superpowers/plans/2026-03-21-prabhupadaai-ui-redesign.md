@@ -29,6 +29,7 @@
 | `web/components/AudioPlayer.tsx` | Bar layout, double-ring, colors | 5 |
 | `web/components/QuestionInput.tsx` | Styling, pill updates | 4 |
 | `web/components/AnswerTabs.tsx` | Tab styling | 5 |
+| `web/components/ScriptureResults.tsx` | Relevance color-coding, header format | 5 |
 | `web/components/QuotaBar.tsx` | Color updates, show x of y format | 4 |
 | `web/components/AuthProvider.tsx` | Cleanup (remove any anon refs) | 3 |
 | `web/lib/api.ts` | Add `no_match` SSE handler | 8 |
@@ -50,6 +51,34 @@
 | File | Reason | Task |
 |------|--------|------|
 | `web/components/QuotaWall.tsx` | Replaced by SubscribeGate | 2 |
+
+---
+
+## Task 0: Pre-flight — Static Export Validation
+
+Per spec section 4.9, validate static export works on the current codebase **before** making any visual changes.
+
+- [ ] **Step 1: Test static export on current code**
+
+```bash
+cd web
+# Temporarily add output: 'export' to next.config.ts
+echo 'import type { NextConfig } from "next"; const c: NextConfig = { output: "export", images: { unoptimized: true } }; export default c;' > next.config.tmp.ts
+cp next.config.ts next.config.ts.bak
+cp next.config.tmp.ts next.config.ts
+npm run build
+```
+
+If build fails, note the errors (missing `'use client'`, `useSearchParams` without `<Suspense>`, `headers()`/`cookies()` calls). These must be fixed during Tasks 1-6.
+
+- [ ] **Step 2: Restore original config**
+
+```bash
+cp next.config.ts.bak next.config.ts
+rm next.config.tmp.ts next.config.ts.bak web/out -rf 2>/dev/null
+```
+
+Document any failures found — they'll be addressed inline during later tasks.
 
 ---
 
@@ -312,11 +341,13 @@ import AratiDivider from './AratiDivider';
 interface SubscribeGateProps {
   quotaType: 'text' | 'voice';
   userEmail: string;
+  textUsed: number;
+  voiceUsed: number;
   onSubmit: (email: string) => void;
   onDismiss: () => void;
 }
 
-export default function SubscribeGate({ quotaType, userEmail, onSubmit, onDismiss }: SubscribeGateProps) {
+export default function SubscribeGate({ quotaType, userEmail, textUsed, voiceUsed, onSubmit, onDismiss }: SubscribeGateProps) {
   const [email, setEmail] = useState(userEmail);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -343,6 +374,9 @@ export default function SubscribeGate({ quotaType, userEmail, onSubmit, onDismis
           You've tasted the nectar
         </h2>
         <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+          You've asked {textUsed} question{textUsed !== 1 ? 's' : ''} and received {voiceUsed} voice answer{voiceUsed !== 1 ? 's' : ''}.
+        </p>
+        <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>
           Unlock unlimited access to Prabhupada's wisdom
         </p>
 
@@ -356,7 +390,7 @@ export default function SubscribeGate({ quotaType, userEmail, onSubmit, onDismis
               type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com"
               className="w-full px-4 py-3 rounded-lg text-sm bg-transparent border outline-none focus:ring-2"
-              style={{ borderColor: 'var(--glass-border-hover)', color: 'var(--text-body)', focusRingColor: 'var(--gold)' }}
+              style={{ borderColor: 'var(--glass-border-hover)', color: 'var(--text-body)', outlineColor: 'var(--gold)' }}
             />
             {error && <p className="text-xs" style={{ color: '#e07050' }}>{error}</p>}
             <button onClick={handleSubmit}
@@ -465,15 +499,29 @@ Change from compact `{n}T {n}V` to readable: "3 of 5 questions · 1 of 2 voice"
 - 44px minimum touch targets
 - Voice toggle: vermillion accent when enabled, disabled with tooltip when voice quota = 0
 
-- [ ] **Step 4: Visual test**
+- [ ] **Step 4: Wire `onNoMatch` callback in page.tsx**
+
+In the `queryStream` call inside `page.tsx`, add the `onNoMatch` callback to display the message in the answer area and hide the Sources tab:
+
+```typescript
+onNoMatch: (message) => {
+  setAnswer(message);
+  setPassages([]);  // hide sources
+  setIsStreaming(false);
+},
+```
+
+This ensures that when the backend sends a `no_match` SSE event (relevance floor not met), the user sees a helpful message instead of silence.
+
+- [ ] **Step 5: Visual test**
 
 Test on dev server at `/`. Verify quota display, pill styling, input focus glow, voice toggle states.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add web/app/page.tsx web/components/QuestionInput.tsx web/components/QuotaBar.tsx
-git commit -m "feat: main page Temple at Dusk styling, quota display, SubscribeGate"
+git commit -m "feat: main page Temple at Dusk styling, quota display, SubscribeGate, no_match UI"
 ```
 
 ---
@@ -578,7 +626,15 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 ```
 
-- [ ] **Step 2: Test static export build**
+- [ ] **Step 2: Update .gitignore before build**
+
+Add `web/out/` and `.superpowers/` to `.gitignore` to prevent committing build output:
+
+```bash
+echo -e '\n# Build output\nweb/out/\n.superpowers/' >> .gitignore
+```
+
+- [ ] **Step 3: Test static export build**
 
 Run: `cd web && npm run build`
 
@@ -589,7 +645,7 @@ Expected: Build succeeds, outputs to `web/out/`. If it fails:
 
 This is a **gate** — do not proceed until build passes.
 
-- [ ] **Step 3: Verify output**
+- [ ] **Step 4: Verify output**
 
 ```bash
 ls web/out/
@@ -597,10 +653,10 @@ ls web/out/
 
 Expected: `index.html`, `auth.html`, `history.html`, `_next/` directory.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add web/next.config.ts
+git add web/next.config.ts .gitignore
 git commit -m "feat: configure Next.js static export for Railway"
 ```
 
@@ -691,7 +747,28 @@ case 'no_match':
 
 Update the `QueryStreamCallbacks` interface to include `onNoMatch?: (message: string) => void`.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 7: Lock top_k to 5 in web/lib/api.ts**
+
+Remove the `topK` parameter from `queryStream()` and hard-code it to `5`:
+
+```typescript
+// From:
+export function queryStream(question: string, topK: number = 5, ...)
+// To:
+export function queryStream(question: string, callbacks: ...)
+```
+
+And in the URLSearchParams:
+```typescript
+const params = new URLSearchParams({
+  question: question.trim(),
+  top_k: '5',  // locked — do not expose to callers
+});
+```
+
+Update all callsites to remove the `topK` argument.
+
+- [ ] **Step 8: Commit**
 
 ```bash
 git add api/main.py api/database.py web/lib/api.ts
@@ -814,11 +891,7 @@ MIN_RELEVANCE_SCORE=0.50
 ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
 ```
 
-- [ ] **Step 5: Update .gitignore**
-
-Add `web/out/` and `.superpowers/` if not already present.
-
-- [ ] **Step 6: Test Docker build locally (optional)**
+- [ ] **Step 5: Test Docker build locally (optional)**
 
 ```bash
 docker build -t prabhupada-ai .
@@ -826,10 +899,10 @@ docker build -t prabhupada-ai .
 
 Expected: Build completes (may take 5-10 min due to FAISS index COPY).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add Dockerfile .dockerignore railway.toml .env.example .gitignore
+git add Dockerfile .dockerignore railway.toml .env.example
 git commit -m "feat: Docker multi-stage build + Railway config + env example"
 ```
 
