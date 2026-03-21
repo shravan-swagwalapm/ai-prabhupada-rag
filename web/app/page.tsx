@@ -58,7 +58,6 @@ export default function Home() {
 
       const cleanup = queryStream(
         question,
-        5,
         {
           onPassages: (p) => {
             setPassages(p);
