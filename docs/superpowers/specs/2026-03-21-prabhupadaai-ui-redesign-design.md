@@ -514,7 +514,7 @@ Dispatch `superpowers:requesting-code-review` agent with review context:
 8. **Memory** — Does FAISS index fit in Railway Hobby plan's 8GB RAM?
 
 **Answer quality checks:**
-1. **Relevance floor** — Low-relevance queries (<35%) show graceful "no match" message, not hallucinated answers
+1. **Relevance floor** — Low-relevance queries (<50%) show graceful "no match" message, not hallucinated answers
 2. **Voice quota** — Daily reset working, not lifetime depletion
 3. **Audio persistence** — Audio files stored in `DATA_DIR` (persistent volume), not ephemeral `api/audio_cache/`
 4. **Semantic cache** — Cache hits return correct mode (voice cached answer shouldn't serve as text answer)
