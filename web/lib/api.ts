@@ -73,7 +73,7 @@ function handleAuthError(status: number): void {
   if (status === 401 && typeof window !== "undefined") {
     localStorage.removeItem("prabhupada_token");
     localStorage.removeItem("prabhupada_user");
-    window.location.href = "/auth";
+    window.location.href = "/auth/";
   }
 }
 

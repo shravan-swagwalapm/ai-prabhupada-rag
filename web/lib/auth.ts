@@ -159,5 +159,5 @@ export function logout(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
-  window.location.href = "/auth";
+  window.location.href = "/auth/";
 }

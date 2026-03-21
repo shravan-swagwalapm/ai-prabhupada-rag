@@ -19,7 +19,7 @@ export default function HistoryPage() {
   // Auth guard
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.replace("/auth");
+      router.replace("/auth/");
     }
   }, [isAuthenticated, authLoading, router]);
 
@@ -56,8 +56,7 @@ export default function HistoryPage() {
           <button
             onClick={() => router.push("/")}
             className="p-2 rounded-lg transition-colors"
-            style={{ "--hover-color": "rgba(212, 175, 55, 0.1)" } as React.CSSProperties & { "--hover-color": string }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--gold, rgba(212, 175, 55, 0.1))")}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(201, 168, 76, 0.1)")}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
             aria-label="Back"
           >

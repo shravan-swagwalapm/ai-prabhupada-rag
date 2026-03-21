@@ -34,7 +34,7 @@ export default function Home() {
   // Auth guard
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.replace("/auth");
+      router.replace("/auth/");
     }
   }, [isAuthenticated, authLoading, router]);
 
