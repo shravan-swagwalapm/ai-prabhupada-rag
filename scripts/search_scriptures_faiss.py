@@ -64,6 +64,74 @@ def _get_voyage_api_key() -> str:
 VECTORS_FILE = INDEX_DIR / "vectors.bin"
 VECTORS_META_FILE = INDEX_DIR / "vectors_meta.json"
 
+# GitHub repo for LFS resolution
+_LFS_REPO = "shravan-swagwalapm/ai-prabhupada-rag"
+
+
+def _is_lfs_pointer(filepath: Path) -> bool:
+    """Check if a file is a Git LFS pointer (small text file with oid)."""
+    try:
+        size = filepath.stat().st_size
+        if size > 1024:  # Real files are >1KB; pointers are ~130 bytes
+            return False
+        content = filepath.read_text(errors="ignore")
+        return "oid sha256:" in content
+    except Exception:
+        return False
+
+
+def _resolve_lfs_pointer(filepath: Path) -> bool:
+    """Download actual file content from GitHub LFS if file is a pointer."""
+    if not _is_lfs_pointer(filepath):
+        return True  # Already resolved
+
+    try:
+        content = filepath.read_text().strip()
+        oid = None
+        size = None
+        for line in content.split("\n"):
+            if line.startswith("oid sha256:"):
+                oid = line.split(":", 1)[1].strip()
+            elif line.startswith("size "):
+                size = int(line.split(" ", 1)[1].strip())
+
+        if not oid or not size:
+            logger.error("Could not parse LFS pointer: %s", filepath)
+            return False
+
+        logger.info("Resolving LFS pointer for %s (oid=%s, size=%d)...", filepath.name, oid[:12], size)
+
+        # GitHub LFS batch API — public repos don't need auth
+        batch_resp = requests.post(
+            f"https://github.com/{_LFS_REPO}.git/info/lfs/objects/batch",
+            json={"operation": "download", "objects": [{"oid": oid, "size": size}]},
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/vnd.git-lfs+json",
+            },
+            timeout=30,
+        )
+        batch_resp.raise_for_status()
+        download_url = batch_resp.json()["objects"][0]["actions"]["download"]["href"]
+        headers = batch_resp.json()["objects"][0]["actions"]["download"].get("header", {})
+
+        # Download actual content
+        logger.info("Downloading %s (%d MB)...", filepath.name, size // (1024 * 1024))
+        dl_resp = requests.get(download_url, headers=headers, stream=True, timeout=300)
+        dl_resp.raise_for_status()
+
+        with open(filepath, "wb") as f:
+            for chunk in dl_resp.iter_content(chunk_size=8192 * 1024):
+                f.write(chunk)
+
+        actual_size = filepath.stat().st_size
+        logger.info("Downloaded %s: %d bytes (expected %d)", filepath.name, actual_size, size)
+        return actual_size == size
+
+    except Exception as e:
+        logger.error("Failed to resolve LFS pointer for %s: %s", filepath.name, e)
+        return False
+
 
 def _build_index_from_vectors(vectors: np.ndarray, nlist: int = 100) -> faiss.Index:
     """Build FAISS IVF index from raw numpy vectors (portable across platforms)."""
@@ -100,6 +168,11 @@ def load_faiss_index():
         if not METADATA_FILE.exists():
             logger.error("FAISS metadata not found at %s", METADATA_FILE)
             return None, None
+
+        # Resolve any Git LFS pointers (Railway doesn't pull LFS during build)
+        for lfs_file in [METADATA_FILE, VECTORS_FILE, INDEX_FILE]:
+            if lfs_file.exists() and _is_lfs_pointer(lfs_file):
+                _resolve_lfs_pointer(lfs_file)
 
         start = time.time()
 
