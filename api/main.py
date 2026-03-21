@@ -147,15 +147,20 @@ def _is_rate_limited(client_ip: str) -> bool:
 
 
 def load_search() -> None:
-    """Load FAISS search function (called once at startup)."""
+    """Load FAISS search function and eagerly load the index at startup."""
     global _search_func, _search_with_embedding_func, _faiss_loaded
     try:
         from search_scriptures_faiss import search_scriptures_faiss as sf
         from search_scriptures_faiss import search_with_embedding as swe
+        from search_scriptures_faiss import load_faiss_index
+        # Eagerly load the index now — catch format errors at startup, not first query
+        index, metadata = load_faiss_index()
+        if index is None:
+            raise RuntimeError("FAISS index failed to load (returned None)")
         _search_func = sf
         _search_with_embedding_func = swe
         _faiss_loaded = True
-        logger.info("FAISS index loaded successfully at startup")
+        logger.info("FAISS index loaded successfully at startup (%d vectors)", index.ntotal)
     except Exception as e:
         logger.warning("FAISS not available (%s), falling back to brute-force", e)
         try:
