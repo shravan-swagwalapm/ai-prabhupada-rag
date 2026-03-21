@@ -1,0 +1,22 @@
+# Core dependencies for AI Prabhupada RAG
+requests>=2.31.0
+numpy>=1.26.0
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+faiss-cpu>=1.7.4
+
+# Phase 4: Voice synthesis
+pydub>=0.25.1
+elevenlabs>=1.0.0
+
+# Phase 5: AI answer generation
+anthropic>=0.40.0
+
+# Phase 6: Web API
+fastapi>=0.100.0
+uvicorn>=0.23.0
+python-multipart>=0.0.6
+
+# Phase 7: Auth + JWT
+google-auth>=2.0.0
+PyJWT>=2.0.0

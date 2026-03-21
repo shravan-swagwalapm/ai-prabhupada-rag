@@ -47,8 +47,12 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Embeddings (optional - uncomment if you don't want to track large files)
-# embeddings/*.json
+# Large data files (too big for git — stored on Railway volume)
+embeddings/
+embeddings_optimized/
+faiss_indexes/
+embeddings_cache.db
+data_local/
 
 # Build output
 web/out/

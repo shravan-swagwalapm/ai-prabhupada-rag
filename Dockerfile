@@ -22,8 +22,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY api/ ./api/
 COPY scripts/ ./scripts/
 COPY config/ ./config/
-COPY faiss_indexes/ ./faiss_indexes/
-COPY embeddings_cache.db* ./
+COPY rag_query.py ./
+
+# FAISS indexes are NOT baked into the image (1.1GB).
+# They live on the Railway persistent volume at /data/faiss_indexes/
+# Upload them post-deploy via: railway volume upload
 
 # Frontend from stage 1
 COPY --from=frontend /app/web/out ./web/out
