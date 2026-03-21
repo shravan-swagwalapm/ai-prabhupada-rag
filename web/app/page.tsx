@@ -7,6 +7,7 @@ import QuestionInput from "@/components/QuestionInput";
 import AnswerTabs from "@/components/AnswerTabs";
 import QuotaBar from "@/components/QuotaBar";
 import SubscribeGate from "@/components/SubscribeGate";
+import ShareBar from "@/components/ShareBar";
 import { queryStream, type Passage } from "@/lib/api";
 
 export default function Home() {
@@ -22,6 +23,7 @@ export default function Home() {
   const [passages, setPassages] = useState<Passage[]>([]);
   const [answer, setAnswer] = useState("");
   const [audioId, setAudioId] = useState<string | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState("");
 
   // Subscribe gate state
   const [showQuotaWall, setShowQuotaWall] = useState(false);
@@ -52,6 +54,7 @@ export default function Home() {
       setPassages([]);
       setAnswer("");
       setAudioId(null);
+      setCurrentQuestion(question);
 
       const cleanup = queryStream(
         question,
@@ -312,6 +315,19 @@ export default function Home() {
         voiceEnabled={voiceEnabled}
         isSearching={isSearching}
       />
+
+      {/* ShareBar — only show when answer is complete */}
+      {answer && !isStreaming && (
+        <div
+          className="w-full max-w-3xl mx-auto mt-2 rounded-xl overflow-hidden"
+          style={{
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+          }}
+        >
+          <ShareBar answerText={answer} question={currentQuestion} />
+        </div>
+      )}
 
       {/* Subscribe Gate Modal */}
       {showQuotaWall && (
