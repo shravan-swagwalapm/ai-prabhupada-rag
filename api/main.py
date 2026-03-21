@@ -750,3 +750,14 @@ async def audio_status(audio_id: str):
         raise HTTPException(status_code=404, detail="Audio ID not found")
 
     return {"audio_id": audio_id, "status": status}
+
+
+# ---------------------------------------------------------------------------
+# Static frontend serving (MUST be LAST — catches all non-API routes)
+# ---------------------------------------------------------------------------
+from fastapi.staticfiles import StaticFiles
+
+_frontend_dir = PROJECT_ROOT / "web" / "out"
+if _frontend_dir.exists():
+    app.mount("/", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")
+    logger.info("Serving frontend from %s", _frontend_dir)
