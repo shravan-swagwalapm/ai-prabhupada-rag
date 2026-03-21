@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Backgrounds — The Sanctum */
+  --sanctum: #060403;
+  --temple-dark: #0c0908;
+  --altar: #161009;
+  --card: #1c150e;
+  --card-hover: #231a12;
+
+  /* Sacred Accents — Arati Flame */
+  --gold: #c9a84c;
+  --gold-bright: #dbb85a;
+  --gold-dim: #a08940;
+  --vermillion: #c24d2c;
+  --vermillion-bright: #e07050;
+  --tulsi: #4a8c3f;
+
+  /* Text — Deity Darshan Glow */
+  --text-primary: #f7f0e3;
+  --text-body: rgba(247,240,227,0.88);
+  --text-secondary: rgba(247,240,227,0.6);
+  --text-muted: rgba(247,240,227,0.4);
+  --text-ghost: rgba(247,240,227,0.25);
+
+  /* Glass & Borders */
+  --glass: rgba(22,16,9,0.6);
+  --glass-border: rgba(201,168,76,0.08);
+  --glass-border-hover: rgba(201,168,76,0.15);
+}
+
+body {
+  background: var(--sanctum);
+  color: var(--text-body);
+  font-family: 'Cormorant Garamond', Georgia, Cambria, "Times New Roman", serif;
+}
+
+/* Noise texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Streaming text cursor */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.streaming-cursor::after {
+  content: "▍";
+  animation: blink 1s infinite;
+  color: var(--gold);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--temple-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--gold-dim);
+  border-radius: 3px;
+}
+
+/* Passage card hover */
+.passage-card {
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.passage-card:hover {
+  border-color: var(--glass-border-hover);
+  background-color: rgba(201, 168, 76, 0.04);
+}
+
+/* Rich Answer — verse blocks */
+.verse-block {
+  position: relative;
+}
+.verse-block::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: linear-gradient(to bottom, rgba(201, 168, 76, 0.5), rgba(201, 168, 76, 0.15));
+}
+
+/* Rich Answer — mantra glow */
+.mantra-block {
+  position: relative;
+  overflow: hidden;
+}
+.mantra-block::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.08), transparent, rgba(201, 168, 76, 0.06));
+  pointer-events: none;
+}
+
+/* Rich Answer — smooth streaming */
+.rich-answer p,
+.rich-answer h2,
+.rich-answer h3,
+.rich-answer h4,
+.rich-answer .verse-block,
+.rich-answer .mantra-block {
+  animation: fadeInUp 0.25s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Arati flame animation */
+@keyframes arati-flicker {
+  0%, 100% { transform: scaleY(1) scaleX(1); }
+  25% { transform: scaleY(1.15) scaleX(0.95); }
+  50% { transform: scaleY(0.9) scaleX(1.05); }
+  75% { transform: scaleY(1.1) scaleX(0.97); }
+}
+
+/* Pulse ring animation */
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 0.2; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
+
+/* Glassmorphism for modals */
+.glass-card {
+  background: var(--glass);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 var(--glass-border);
+}
+
+/* Smooth focus ring for inputs */
+input:focus,
+textarea:focus {
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.08);
+}
+
+/* Tab transitions */
+.tab-pill {
+  position: relative;
+  z-index: 1;
+}
+
+/* Audio progress bar smoothness */
+.audio-progress {
+  transition: width 80ms linear;
+}
