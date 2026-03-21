@@ -48,10 +48,9 @@ export default function AuthPage() {
   useEffect(() => {
     if (isLoading || isAuthenticated || gsiInitialized.current) return;
     gsiInitialized.current = true;
-    initGoogleSignIn("google-signin-btn", () => {
+    initGoogleSignIn("google-signin-btn-hero", () => {
       window.location.href = "/";
     });
-    // Also init the bottom CTA button
     initGoogleSignIn("google-signin-btn-bottom", () => {
       window.location.href = "/";
     });
@@ -147,6 +146,41 @@ export default function AuthPage() {
         >
           Powered by AI · Grounded in scripture
         </p>
+
+        {/* Hero CTA */}
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <div id="google-signin-btn-hero" />
+
+          {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+            <button
+              onClick={async () => {
+                try {
+                  await login("dev-token");
+                  router.replace("/");
+                } catch { /* silent */ }
+              }}
+              className="rounded-full transition-all"
+              style={{
+                background: "var(--gold)",
+                color: "var(--sanctum)",
+                minHeight: 44,
+                paddingLeft: "2rem",
+                paddingRight: "2rem",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                letterSpacing: "0.05em",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--gold-bright)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "var(--gold)"; }}
+            >
+              Sign In to Ask Prabhupada
+            </button>
+          )}
+
+          <p className="text-xs" style={{ color: "var(--text-ghost)" }}>
+            5 questions free · No credit card
+          </p>
+        </div>
 
         {/* Scroll hint */}
         <div
