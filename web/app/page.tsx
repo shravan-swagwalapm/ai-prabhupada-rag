@@ -90,7 +90,6 @@ export default function Home() {
             setQuotaWallType((quotaType === "voice" ? "voice" : "text") as "text" | "voice");
             setShowQuotaWall(true);
           },
-          // @ts-ignore — type added in Task 8
           onNoMatch: (message: string) => {
             setAnswer(message);
             setPassages([]);

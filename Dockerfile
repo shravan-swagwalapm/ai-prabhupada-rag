@@ -23,7 +23,6 @@ COPY api/ ./api/
 COPY scripts/ ./scripts/
 COPY config/ ./config/
 COPY faiss_indexes/ ./faiss_indexes/
-COPY data_local/ ./data_local/
 COPY embeddings_cache.db* ./
 
 # Frontend from stage 1

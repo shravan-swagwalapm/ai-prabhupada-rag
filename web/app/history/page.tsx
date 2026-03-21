@@ -33,7 +33,7 @@ export default function HistoryPage() {
         setEntries(data.entries);
         setTotal(data.total);
       } catch (err) {
-        console.error("Failed to fetch history:", err);
+        // Error handled by loading state — history will show empty
       } finally {
         setIsLoading(false);
       }
@@ -109,7 +109,7 @@ export default function HistoryPage() {
               return (
                 <div
                   key={entry.id}
-                  className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] overflow-hidden"
+                  className="rounded-xl border border-[var(--glass-border)] bg-[var(--card)] overflow-hidden"
                 >
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : entry.id)}
@@ -137,7 +137,7 @@ export default function HistoryPage() {
                   </button>
 
                   {isExpanded && (
-                    <div className="px-4 pb-5 border-t border-[var(--border)]">
+                    <div className="px-4 pb-5 border-t border-[var(--glass-border)]">
                       <div className="pt-4">
                         <RichAnswer
                           text={entry.answer_text}

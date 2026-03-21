@@ -66,7 +66,7 @@ export default function SubscribeGate({ quotaType, userEmail, textUsed, voiceUse
           </div>
         )}
 
-        <button onClick={onDismiss} className="mt-4 text-xs" style={{ color: 'var(--text-ghost)' }}>
+        <button onClick={onDismiss} className="mt-4 text-xs py-2 px-4" style={{ color: 'var(--text-ghost)' }}>
           Dismiss
         </button>
       </div>
