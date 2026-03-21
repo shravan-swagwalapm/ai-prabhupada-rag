@@ -61,7 +61,8 @@ def _get_voyage_api_key() -> str:
     return api_key
 
 
-VECTORS_FILE = INDEX_DIR / "vectors.npy"
+VECTORS_FILE = INDEX_DIR / "vectors.bin"
+VECTORS_META_FILE = INDEX_DIR / "vectors_meta.json"
 
 
 def _build_index_from_vectors(vectors: np.ndarray, nlist: int = 100) -> faiss.Index:
@@ -116,7 +117,9 @@ def load_faiss_index():
         if _INDEX is None and VECTORS_FILE.exists():
             try:
                 logger.info("Rebuilding FAISS index from %s...", VECTORS_FILE)
-                vectors = np.load(str(VECTORS_FILE))
+                with open(VECTORS_META_FILE) as mf:
+                    vmeta = json.load(mf)
+                vectors = np.fromfile(str(VECTORS_FILE), dtype=np.float32).reshape(vmeta["shape"])
                 _INDEX = _build_index_from_vectors(vectors)
             except Exception as e:
                 logger.error("Failed to rebuild FAISS index: %s", e, exc_info=True)
