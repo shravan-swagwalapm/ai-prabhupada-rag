@@ -24,7 +24,9 @@ export default function AuthPage() {
     gsiInitialized.current = true;
 
     initGoogleSignIn("google-signin-btn", () => {
-      router.replace("/");
+      // loginWithGoogle() already stored JWT + user in localStorage.
+      // Force a full page navigation so AuthProvider re-reads localStorage on mount.
+      window.location.href = "/";
     });
   }, [isLoading, isAuthenticated, router]);
 
