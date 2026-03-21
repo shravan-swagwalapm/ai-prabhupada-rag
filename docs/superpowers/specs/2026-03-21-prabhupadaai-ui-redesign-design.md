@@ -195,7 +195,7 @@ interface SubscribeGateProps {
 
 ### 3.7 New Component: AratiDivider.tsx
 
-Reusable CSS-only animated flame divider. Used in auth screen, soft gate, and optionally in answer display between sections.
+Reusable CSS-only animated flame divider. Used in auth screen, SubscribeGate, and optionally in answer display between sections.
 
 ### 3.8 globals.css Updates
 
@@ -345,7 +345,7 @@ SQLite (`api/database.py`) uses `DATA_DIR` env var (defaults to `data_local/`). 
 
 This is a zero-code change — `database.py` already reads `DATA_DIR` from env (line 22).
 
-**Why this is not optional:** Without persistence, (a) user history vanishes, (b) quota resets let users get unlimited free questions, (c) the anonymous trial system becomes pointless since users can just wait for redeploy.
+**Why this is not optional:** Without persistence, (a) user history vanishes, (b) quota resets give users unlimited free questions on every redeploy, (c) waitlist/subscribe data is lost.
 
 ### 4.7 Resource Budget (Railway Hobby Plan — 8GB RAM)
 
@@ -422,6 +422,8 @@ DEFAULT_VOICE_QUOTA = 2
 
 All new users get 5 text + 2 voice. Existing users keep their current quota (no migration needed — only the default for new rows changes).
 
+**Also update the SQL `DEFAULT` values** in the `CREATE TABLE` statement (`database.py` lines 51-52) from `DEFAULT 3` to `DEFAULT 5` / `DEFAULT 2` for consistency. The Python constants take precedence in `upsert_user()`, but the SQL defaults should match to avoid confusion.
+
 ### 5.3 Backend (No Auth Changes Needed)
 
 Both endpoints already use `Depends(get_current_user)` which requires authentication. This is correct for auth-first. **No changes to auth middleware.**
@@ -429,6 +431,8 @@ Both endpoints already use `Depends(get_current_user)` which requires authentica
 The existing quota check + 402 response (`api/main.py:410-421`) already handles exhausted quota. The frontend just needs to show `SubscribeGate` when it receives a 402.
 
 Rate limiting stays as-is: 10 req/60s per IP for all authenticated users. No dual-window needed since there are no anonymous users.
+
+**Dead code cleanup:** Remove unused `optional_auth` import from `api/main.py` (line 47). The `optional_auth` function in `api/middleware.py` can be left in place as a utility for future use, but it has no current callers.
 
 ### 5.4 Frontend Quota Display
 
@@ -440,6 +444,11 @@ Show remaining quota in the main page header:
 ```
 
 When API returns 402 → show `SubscribeGate` modal instead of `QuotaWall`.
+
+**New SSE event: `no_match`** — Add handler to `queryStream` in `web/lib/api.ts`. When the relevance floor (Section 10.1) filters out all results, the backend sends `{"type": "no_match", "message": "..."}`. The frontend should:
+- Display the message in the answer area (muted text, Cormorant Garamond 400)
+- Hide the Sources tab (no relevant passages)
+- Do NOT decrement quota (backend skips quota deduction for no-match)
 
 ### 5.5 Edge Cases
 
@@ -554,9 +563,8 @@ Dispatch `superpowers:requesting-code-review` agent with review context:
 - `web/components/QuestionInput.tsx` — styling, pill updates
 - `web/components/AnswerTabs.tsx` — tab styling
 - `web/components/QuotaBar.tsx` — color updates
-- `web/components/QuotaWall.tsx` — replaced by SubscribeGate for quota-exhausted users
 - `web/components/AuthProvider.tsx` — no anonymous mode needed (simpler)
-- `web/lib/api.ts` — no `anon` param needed (simpler)
+- `web/lib/api.ts` — add `no_match` SSE handler, no other changes needed
 - `api/main.py` — static file serving, relevance floor, audio cache in DATA_DIR
 - `api/database.py` — update DEFAULT_TEXT_QUOTA=5, DEFAULT_VOICE_QUOTA=2
 - `Dockerfile` — multi-stage build
@@ -569,6 +577,9 @@ Dispatch `superpowers:requesting-code-review` agent with review context:
 - `web/components/SubscribeGate.tsx` — quota exhausted modal with email collection
 - `web/components/AratiDivider.tsx` — reusable flame divider
 - `.dockerignore` — exclude large files from image
+
+### Deleted
+- `web/components/QuotaWall.tsx` — replaced by `SubscribeGate.tsx`
 
 ### Not Changed (logic preserved)
 - `web/components/RichAnswer.tsx` — CSS only, two-tier Sanskrit detection untouched
@@ -686,8 +697,8 @@ Existing users with `voice_quota=3` and `text_quota=3` keep their existing value
 **D. Auth-first caps cost naturally:**
 No anonymous access means every query costs quota. With 5 text + 2 voice per user (lifetime), cost per user is bounded:
 - Max text cost per user: 5 × $0.022 = **$0.11**
-- Max voice cost per user: 2 × $0.20 = **$0.40**
-- **Max total per user: $0.51** (lifetime, one-time)
+- Max voice cost per user: 2 × $0.20 = **$0.40** (using lower range — midpoint of $0.15-0.30 is $0.225)
+- **Max total per user: ~$0.51-0.61** (lifetime, one-time, depending on voice response length)
 
 **E. Monthly cost ceiling:**
 At 100 new signups/month (optimistic MVP):
