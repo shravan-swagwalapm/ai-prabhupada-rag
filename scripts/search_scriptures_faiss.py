@@ -24,10 +24,13 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).parent.parent
 
-# Support DATA_DIR (Railway persistent volume) or fallback to project root
+# Support DATA_DIR (Railway persistent volume) or fallback to project root.
+# Check persistent volume first — resolved LFS files are saved there.
 _data_dir = os.getenv("DATA_DIR")
-if _data_dir and (Path(_data_dir) / "faiss_indexes" / "scripture_ivf100.index").exists():
-    INDEX_DIR = Path(_data_dir) / "faiss_indexes"
+_vol_index_dir = Path(_data_dir) / "faiss_indexes" if _data_dir else None
+if _vol_index_dir and (_vol_index_dir / "scripture_ivf100.index").exists() and (_vol_index_dir / "scripture_ivf100.index").stat().st_size > 1000000:
+    INDEX_DIR = _vol_index_dir
+    logger.info("Using FAISS data from persistent volume: %s", INDEX_DIR)
 else:
     INDEX_DIR = PROJECT_ROOT / "faiss_indexes"
 INDEX_FILE = INDEX_DIR / "scripture_ivf100.index"
@@ -170,9 +173,23 @@ def load_faiss_index():
             return None, None
 
         # Resolve any Git LFS pointers (Railway doesn't pull LFS during build)
+        lfs_resolved = False
         for lfs_file in [METADATA_FILE, VECTORS_FILE, INDEX_FILE]:
             if lfs_file.exists() and _is_lfs_pointer(lfs_file):
                 _resolve_lfs_pointer(lfs_file)
+                lfs_resolved = True
+
+        # Persist resolved files to Railway volume so next restart is instant
+        if lfs_resolved and _vol_index_dir and _vol_index_dir != INDEX_DIR:
+            try:
+                _vol_index_dir.mkdir(parents=True, exist_ok=True)
+                import shutil
+                for f in INDEX_DIR.iterdir():
+                    if f.is_file() and f.stat().st_size > 1000:
+                        shutil.copy2(f, _vol_index_dir / f.name)
+                logger.info("Persisted FAISS data to volume: %s", _vol_index_dir)
+            except Exception as e:
+                logger.warning("Could not persist to volume: %s", e)
 
         start = time.time()
 

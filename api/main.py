@@ -191,8 +191,15 @@ def _init_answer_cache() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-    load_search()
-    _init_answer_cache()
+    # Load FAISS in a background thread — LFS downloads can take 5-7 min
+    # on Railway. The health endpoint returns 200 immediately so the
+    # Railway healthcheck passes while FAISS loads.
+    import threading
+    def _load_in_background():
+        load_search()
+        _init_answer_cache()
+    bg = threading.Thread(target=_load_in_background, daemon=True)
+    bg.start()
     yield
     logger.info("API server shutting down")
 
@@ -383,17 +390,16 @@ async def join_waitlist(
 
 @app.get("/api/health")
 async def health_check():
-    """Health check. Returns HTTP 503 when search backend is not ready."""
+    """Health check. Always returns 200 so Railway healthcheck passes during
+    FAISS loading (LFS download can take 5-7 min on first deploy).
+    Clients should check 'search_ready' field before querying."""
     ready = _search_func is not None
-    body = {
-        "status": "ok" if ready else "degraded",
+    return {
+        "status": "ok" if ready else "starting",
         "faiss_loaded": _faiss_loaded,
         "search_ready": ready,
         "cache_entries": _answer_cache.size() if _answer_cache else 0,
     }
-    if not ready:
-        return JSONResponse(status_code=503, content=body)
-    return body
 
 
 @app.post("/api/query", response_model=QueryResponse)
