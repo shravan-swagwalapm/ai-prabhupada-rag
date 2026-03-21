@@ -501,6 +501,13 @@ Dispatch `superpowers:requesting-code-review` agent with review context:
 7. **Docker** — Are secrets excluded from image? Is `.env` in `.dockerignore`?
 8. **Memory** — Does FAISS index fit in Railway Hobby plan's 8GB RAM?
 
+**Answer quality checks:**
+1. **Relevance floor** — Low-relevance queries (<35%) show graceful "no match" message, not hallucinated answers
+2. **Voice quota** — Daily reset working, not lifetime depletion
+3. **Audio persistence** — Audio files stored in `DATA_DIR` (persistent volume), not ephemeral `api/audio_cache/`
+4. **Semantic cache** — Cache hits return correct mode (voice cached answer shouldn't serve as text answer)
+5. **Cost ceiling** — ElevenLabs usage trackable via dashboard, voice disabled for anonymous
+
 **Informational checks:**
 1. Dead code removed (old color variables, unused components)
 2. Consistent use of new CSS variables throughout
@@ -530,8 +537,9 @@ Dispatch `superpowers:requesting-code-review` agent with review context:
 - `web/components/AuthProvider.tsx` — support anonymous mode
 - `web/lib/api.ts` — add `anon` param to query functions
 - `web/lib/auth.ts` — add anonymous mode helpers
-- `api/main.py` — static file serving, optional auth for anon
+- `api/main.py` — static file serving, optional auth for anon, relevance floor, audio cache in DATA_DIR, anon rate limit
 - `api/middleware.py` — optional_auth dependency
+- `api/database.py` — voice daily reset fields (voice_uses_today, voice_reset_date)
 - `Dockerfile` — multi-stage build
 - `.dockerignore` — new file
 - `railway.toml` — updated config
@@ -554,17 +562,168 @@ Dispatch `superpowers:requesting-code-review` agent with review context:
 
 ---
 
-## 10. Implementation Order
+## 10. Answer Quality Guardrails
+
+### 10.1 Relevance Floor
+
+FAISS returns results even when nothing is relevant. Without a floor, Claude fabricates answers grounded in irrelevant passages.
+
+**Implementation** (in streaming and POST query handlers):
+
+```python
+MIN_RELEVANCE_SCORE = 0.35  # Below this, passages are noise
+
+# After FAISS search, filter results
+relevant_results = [r for r in raw_results if r.get("similarity", 0) >= MIN_RELEVANCE_SCORE]
+
+if not relevant_results:
+    # Return passages for transparency but skip AI answer
+    yield {"type": "no_match", "message": "I could not find a direct teaching on this topic in Prabhupada's books. Try rephrasing with specific scripture terms."}
+    return
+```
+
+**Why 0.35?** Measured from 7 cached recordings: lowest useful hit was 63.7% (material failure). Anything below 35% is noise. This prevents Claude from hallucinating answers when the corpus genuinely doesn't cover a topic.
+
+### 10.2 Top-k Tuning
+
+Current default: `top_k=5`. This is correct for the corpus size (161K chunks). Do NOT increase above 10 — more passages dilute relevance and increase Claude token costs.
+
+**Frontend:** Lock `top_k` to 5 for all users. Remove it from the API client params. The `ge=1, le=20` backend validation stays as a safety net, but frontend should never send >5.
+
+### 10.3 Answer Quality Signals (Frontend)
+
+Display relevance scores on the Sources tab to build trust:
+
+```
+Sources (5) — Top relevance: 78.4%
+├── BG 2.20 (78.4%) — na jāyate mriyate vā kadācin...
+├── BG 2.13 (72.1%) — dehino 'smin yathā dehe...
+└── SB 3.25.33 (65.2%) — ...
+```
+
+Color-code: ≥70% green (tulsi), 50-70% gold, <50% muted.
+
+### 10.4 Streaming Prompt Selection
+
+The spec currently uses `mode="full"` for text and `mode="concise"` for voice. This is correct and must not change. The "full" prompt produces 800-1200 word answers with markdown formatting (headers, bold, verse blocks) — exactly what `RichAnswer.tsx` renders. The "concise" prompt produces 360-450 word flowing prose — exactly what ElevenLabs can synthesize naturally.
+
+**Critical:** Never use the concise prompt for text-only answers. Users paying with quota expect comprehensive scripture-grounded responses, not abbreviated voice scripts.
+
+---
+
+## 11. Cost Control
+
+### 11.1 Cost Per Query (Current)
+
+| Component | Cost | When |
+|-----------|------|------|
+| FAISS search | ~$0.00001 | Every query (Voyage API for embedding, 80% cached) |
+| Claude Sonnet (full mode) | ~$0.005-0.015 | Text answers — ~1500 input + ~1200 output tokens |
+| Claude Sonnet (concise) | ~$0.003-0.008 | Voice answers — ~1500 input + ~500 output tokens |
+| ElevenLabs v3 (~1 min) | ~$0.15-0.30 | Voice answers only |
+| **Total (text only)** | **~$0.005-0.015** | |
+| **Total (with voice)** | **~$0.16-0.32** | |
+| **Cached (semantic hit)** | **~$0.00** | 92% similarity threshold |
+
+### 11.2 Cost Guardrails (Implement These)
+
+**A. Semantic cache (already exists, verify threshold):**
+- `SIMILARITY_THRESHOLD = 0.92` in `answer_cache.py` — this is aggressive enough. At 0.92, "What is the soul?" and "What is the atma?" will cache-hit. Identical rephrases are caught.
+- **Action:** No change needed. Verify cache is working post-deploy via `/api/health` response (`cache_entries` field).
+
+**B. Audio file caching (NEW — add to backend):**
+When a semantic cache hit has an `audio_id`, check if the MP3 file still exists on disk. If yes, serve it directly (zero ElevenLabs cost). If the file was evicted, regenerate.
+
+```python
+# In audio endpoint — check persistent volume first
+audio_path = AUDIO_CACHE_DIR / f"{audio_id}.mp3"
+if audio_path.exists():
+    return FileResponse(audio_path, media_type="audio/mpeg")
+# else: trigger regeneration
+```
+
+**Current code already does this** (`api/main.py:708`). But on Railway with ephemeral filesystem, audio files are lost on redeploy. **Fix:** Store audio files in `DATA_DIR` (persistent volume), not `api/audio_cache/`.
+
+```python
+# Change from:
+AUDIO_CACHE_DIR = PROJECT_ROOT / "api" / "audio_cache"
+# To:
+AUDIO_CACHE_DIR = Path(os.getenv("DATA_DIR", str(PROJECT_ROOT / "data_local"))) / "audio_cache"
+```
+
+This single-line change means cached voice responses survive redeploys. At $0.15-0.30 per generation, this saves significant money.
+
+**C. Per-user voice daily cap (NEW):**
+Default `voice_quota=3` in database is a lifetime cap — once exhausted, user can never use voice again. This is a product bug.
+
+**Fix in implementation:** Change voice quota to a daily reset model:
+- Track `voice_uses_today` (counter) and `voice_reset_date` (date string) in users table
+- Reset counter when `voice_reset_date != today`
+- Default: 5 voice queries per day per user
+- This gives users ongoing access while capping ElevenLabs costs
+
+**D. Anonymous users: text-only (already in spec):**
+Section 5.2 already disables voice for anonymous users. This is the most important cost control — unauthenticated users get zero ElevenLabs costs.
+
+**E. Monthly cost ceiling:**
+At full capacity (100 users × 5 voice/day × 30 days):
+- Voice: 15,000 × $0.20 = **$3,000/month** ← dangerous
+- Text: 15,000 × $0.01 = **$150/month** ← manageable
+
+**Mitigation:** Keep initial voice quota low (3/day), monitor via ElevenLabs dashboard, increase only after validating usage patterns. Consider caching popular questions' audio permanently.
+
+### 11.3 Model Fallback
+
+If `ANTHROPIC_MODEL` env var is not set, the system defaults to `claude-sonnet-4-5-20250929`. This is correct for quality. Do NOT fall back to Haiku for cost savings — answer quality is the product's core value proposition.
+
+**Exception:** If Anthropic API returns 529 (overloaded), the current code raises an exception. Consider adding a single retry with 2s backoff before failing.
+
+---
+
+## 12. Scalability Guardrails
+
+### 12.1 What Works at MVP Scale (1-100 concurrent users)
+
+- **SQLite + WAL mode** — WAL allows concurrent reads during writes. At MVP scale, this is fine. SQLite handles thousands of reads/sec.
+- **In-memory semantic cache** — `np.ndarray` with 1000 entries max. Matrix multiply for lookup is <1ms even at 1000 entries.
+- **Single uvicorn worker** — Railway Hobby plan has 1 vCPU. Multiple workers would fight over FAISS index memory. Keep `--workers 1`.
+- **Thread-per-voice-request** — ElevenLabs synthesis is I/O bound. Threading is correct here. Max concurrent threads bounded by audio job registry (500).
+
+### 12.2 What to Watch
+
+| Signal | Threshold | Action |
+|--------|-----------|--------|
+| Memory usage | >4GB | Investigate metadata.json lazy loading |
+| SQLite lock contention | >100ms write latency | Add connection pooling or switch to Postgres |
+| Rate limit store size | >10K IPs | Already has cleanup at 5000, but verify in logs |
+| Audio cache disk | >5GB | Add LRU eviction for audio files in `DATA_DIR` |
+| FAISS cold start | >5s | Pre-warm in lifespan (already done) |
+| Semantic cache | >500 entries | Already has LRU at 1000, but monitor RAM |
+
+### 12.3 NOT Doing Now (Future Scale)
+
+These are explicitly out of scope for this deployment. Document them so we don't over-engineer:
+
+- **Postgres migration** — Only needed if SQLite write contention becomes a bottleneck (unlikely under 1000 daily users)
+- **Redis caching** — Only needed if semantic cache needs to be shared across multiple workers
+- **CDN for audio** — Only needed if audio bandwidth exceeds Railway's included bandwidth
+- **FAISS sharding** — Only needed if index exceeds 1M vectors (currently 161K)
+- **Horizontal scaling** — Only needed if single Railway instance can't handle traffic (8GB RAM, 1 vCPU is generous for MVP)
+
+---
+
+## 13. Implementation Order
 
 1. **Visual foundation** — globals.css, tailwind.config.ts, layout.tsx (fonts)
 2. **Reusable components** — AratiDivider, ShareBar, SoftGate
 3. **Auth flow** — auth page redesign, AuthProvider anonymous mode
 4. **Main page** — query screen styling, anonymous trial logic
-5. **Answer display** — RichAnswer colors, AudioPlayer bar, AnswerTabs
+5. **Answer display** — RichAnswer colors, AudioPlayer bar, AnswerTabs, relevance score display on Sources tab
 6. **History page** — color updates
 7. **Static export** — next.config.ts, test build
-8. **Backend integration** — FastAPI static serving, optional auth, CORS
-9. **Docker** — multi-stage Dockerfile, .dockerignore
-10. **Railway deploy** — push, set env vars, verify health check
-11. **Post-deploy verification** — all screens on mobile, voice works, share works
-12. **Code review agent** — dispatch superpowers:requesting-code-review
+8. **Backend hardening** — Relevance floor (MIN_RELEVANCE_SCORE=0.35), audio cache in DATA_DIR, anonymous rate limit (3 req/IP/hour), voice daily reset quota
+9. **Backend integration** — FastAPI static serving, optional auth, CORS, localhost:8000 in ALLOWED_ORIGINS default
+10. **Docker** — multi-stage Dockerfile, .dockerignore
+11. **Railway deploy** — push, set env vars, persistent volume at /data, verify health check
+12. **Post-deploy verification** — all screens on mobile, voice works, share works, semantic cache populated, audio persists across simulated redeploy
+13. **Code review agent** — dispatch superpowers:requesting-code-review with answer quality + cost + scalability review context
