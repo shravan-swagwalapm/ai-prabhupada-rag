@@ -402,9 +402,13 @@ function isAnonExhausted(): boolean {
 
 ### 5.2 Backend (api/main.py)
 
-Add `optional_auth` dependency for query endpoints when `anon=true`:
+**Required code change:** Replace `Depends(get_current_user)` with `Depends(optional_auth)` on BOTH `/api/query` and `/api/query/stream` endpoints. Current code at `api/main.py:528` uses `get_current_user` which returns 401 for unauthenticated requests — this blocks anonymous users.
 
 ```python
+# CHANGE FROM (current):
+user_id: str = Depends(get_current_user)
+
+# CHANGE TO:
 @app.get("/api/query/stream")
 async def query_stream(
     request: Request,
@@ -412,14 +416,22 @@ async def query_stream(
     top_k: int = Query(default=5, ge=1, le=20),
     include_voice: bool = Query(default=False),
     anon: bool = Query(default=False),
-    user_id: str = Depends(optional_auth),  # Returns None for anon
+    user_id: Optional[str] = Depends(optional_auth),  # Returns None for anon
 ):
 ```
 
-- If `anon=True` and no auth token: allow query but skip quota/history
+- If `anon=True` and `user_id is None`: allow query but skip quota/history
 - Rate limiting still applies (per-IP) — **stricter for anonymous**: 3 req/IP/hour (vs 10 req/60s for authenticated)
 - Voice disabled for anonymous users (`include_voice` forced to False)
-- Anonymous rate limit implemented as a separate sliding window keyed by IP + `anon` flag
+- Anonymous rate limit: refactor `_is_rate_limited()` to accept a `window_secs` and `max_requests` param, then call with `(ip, 3600, 3)` for anonymous vs `(ip, 60, 10)` for authenticated
+
+```python
+def _is_rate_limited(client_ip: str, window_secs: int = None, max_requests: int = None) -> bool:
+    """Rate limit with configurable window. Defaults to env var settings."""
+    window_secs = window_secs or _RATE_LIMIT_WINDOW_SECS
+    max_requests = max_requests or _RATE_LIMIT_REQUESTS
+    # ... existing sliding window logic with parameterized values
+```
 
 ### 5.3 Edge Cases
 
@@ -551,14 +563,14 @@ Dispatch `superpowers:requesting-code-review` agent with review context:
 - `web/components/AratiDivider.tsx` — reusable flame divider
 - `.dockerignore` — exclude large files from image
 
-### Not Changed
-- `web/components/RichAnswer.tsx` — logic untouched (only CSS)
+### Not Changed (logic preserved)
+- `web/components/RichAnswer.tsx` — CSS only, two-tier Sanskrit detection untouched
 - `web/components/ScriptureResults.tsx` — styling updates, logic preserved
 - `web/lib/scriptures.ts` — no changes
-- `api/main.py` — core query/streaming/audio logic untouched
-- `scripts/*` — no changes to RAG pipeline
+- `scripts/*` — no changes to RAG pipeline or generate_answer.py prompts
 - `faiss_indexes/*` — no changes
 - `rag_query.py` — no changes
+- `api/answer_cache.py` — no changes (SIMILARITY_THRESHOLD=0.92 stays)
 
 ---
 
@@ -571,7 +583,7 @@ FAISS returns results even when nothing is relevant. Without a floor, Claude fab
 **Implementation** (in streaming and POST query handlers):
 
 ```python
-MIN_RELEVANCE_SCORE = 0.35  # Below this, passages are noise
+MIN_RELEVANCE_SCORE = 0.50  # Below this, passages are noise — start strict, loosen if needed
 
 # After FAISS search, filter results
 relevant_results = [r for r in raw_results if r.get("similarity", 0) >= MIN_RELEVANCE_SCORE]
@@ -582,7 +594,7 @@ if not relevant_results:
     return
 ```
 
-**Why 0.35?** Measured from 7 cached recordings: lowest useful hit was 63.7% (material failure). Anything below 35% is noise. This prevents Claude from hallucinating answers when the corpus genuinely doesn't cover a topic.
+**Why 0.50?** Measured from 7 cached recordings: lowest useful hit was 63.7% (material failure). A floor of 0.50 provides generous headroom below that while filtering genuine noise. Start strict — it's easier to loosen (users won't notice a floor decrease) than to tighten (users will notice worse answers). Make this an env var (`MIN_RELEVANCE_SCORE`) so it can be tuned in production without redeploying.
 
 ### 10.2 Top-k Tuning
 
@@ -615,15 +627,17 @@ The spec currently uses `mode="full"` for text and `mode="concise"` for voice. T
 
 ### 11.1 Cost Per Query (Current)
 
-| Component | Cost | When |
-|-----------|------|------|
-| FAISS search | ~$0.00001 | Every query (Voyage API for embedding, 80% cached) |
-| Claude Sonnet (full mode) | ~$0.005-0.015 | Text answers — ~1500 input + ~1200 output tokens |
-| Claude Sonnet (concise) | ~$0.003-0.008 | Voice answers — ~1500 input + ~500 output tokens |
+| Component | Cost | Calculation |
+|-----------|------|-------------|
+| FAISS search | ~$0.00001 | Voyage API embedding, 80% cached |
+| Claude Sonnet (full mode) | **~$0.022** | ~1500 input × $3/1M = $0.0045 + ~1200 output × $15/1M = $0.018 |
+| Claude Sonnet (concise) | **~$0.012** | ~1500 input × $3/1M = $0.0045 + ~500 output × $15/1M = $0.0075 |
 | ElevenLabs v3 (~1 min) | ~$0.15-0.30 | Voice answers only |
-| **Total (text only)** | **~$0.005-0.015** | |
-| **Total (with voice)** | **~$0.16-0.32** | |
+| **Total (text only)** | **~$0.022** | |
+| **Total (with voice)** | **~$0.17-0.33** | |
 | **Cached (semantic hit)** | **~$0.00** | 92% similarity threshold |
+
+*Pricing: Claude Sonnet 4.5 at $3/1M input, $15/1M output. Verify at deploy time — model pricing may change.*
 
 ### 11.2 Cost Guardrails (Implement These)
 
@@ -642,7 +656,7 @@ if audio_path.exists():
 # else: trigger regeneration
 ```
 
-**Current code already does this** (`api/main.py:708`). But on Railway with ephemeral filesystem, audio files are lost on redeploy. **Fix:** Store audio files in `DATA_DIR` (persistent volume), not `api/audio_cache/`.
+**Current code has the serve-from-disk logic** (`api/main.py:708` checks `audio_path.exists()` and returns `FileResponse`). However, `AUDIO_CACHE_DIR` is hardcoded to `PROJECT_ROOT / "api" / "audio_cache"` (ephemeral on Railway). Audio files are lost on every redeploy. **Required change:** Move `AUDIO_CACHE_DIR` to `DATA_DIR` (persistent volume):
 
 ```python
 # Change from:
@@ -657,24 +671,34 @@ This single-line change means cached voice responses survive redeploys. At $0.15
 Default `voice_quota=3` in database is a lifetime cap — once exhausted, user can never use voice again. This is a product bug.
 
 **Fix in implementation:** Change voice quota to a daily reset model:
-- Track `voice_uses_today` (counter) and `voice_reset_date` (date string) in users table
-- Reset counter when `voice_reset_date != today`
-- Default: 5 voice queries per day per user
-- This gives users ongoing access while capping ElevenLabs costs
+- Add two columns to users table: `voice_uses_today INTEGER DEFAULT 0` and `voice_reset_date TEXT`
+- Reset counter when `voice_reset_date != today` (check at query time, not via cron)
+- Default: 3 voice queries per day per user
+- Keep existing `voice_quota` column as-is (unused but harmless — avoids migration risk)
+
+**Migration SQL** (add to `init_db()` after table creation):
+```sql
+-- Idempotent: ALTER TABLE fails silently if columns exist
+ALTER TABLE users ADD COLUMN voice_uses_today INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN voice_reset_date TEXT;
+```
+
+**Note:** SQLite's `ALTER TABLE ADD COLUMN` is safe — existing rows get the default value. Wrap each statement in try/except to handle the "duplicate column name" error on subsequent startups. Existing users with `voice_quota=0` are NOT affected — the new daily system is independent of the old lifetime quota.
 
 **D. Anonymous users: text-only (already in spec):**
 Section 5.2 already disables voice for anonymous users. This is the most important cost control — unauthenticated users get zero ElevenLabs costs.
 
 **E. Monthly cost ceiling:**
-At full capacity (100 users × 5 voice/day × 30 days):
-- Voice: 15,000 × $0.20 = **$3,000/month** ← dangerous
-- Text: 15,000 × $0.01 = **$150/month** ← manageable
+At full capacity (100 users × 3 voice/day × 30 days):
+- Voice: 9,000 × $0.20 = **$1,800/month** ← dangerous
+- Text: 9,000 × $0.022 = **$198/month** ← manageable
+- With 30% semantic cache hit rate: voice drops to **$1,260/month**, text to **$139/month**
 
-**Mitigation:** Keep initial voice quota low (3/day), monitor via ElevenLabs dashboard, increase only after validating usage patterns. Consider caching popular questions' audio permanently.
+**Mitigation:** Keep initial voice quota at 3/day, monitor via ElevenLabs dashboard. At 10 active users (realistic MVP), monthly voice cost is ~$180. Cache popular questions' audio permanently on the persistent volume.
 
 ### 11.3 Model Fallback
 
-If `ANTHROPIC_MODEL` env var is not set, the system defaults to `claude-sonnet-4-5-20250929`. This is correct for quality. Do NOT fall back to Haiku for cost savings — answer quality is the product's core value proposition.
+If `ANTHROPIC_MODEL` env var is not set, the system defaults to `claude-sonnet-4-5-20250929`. Check for a newer Sonnet version at deploy time and update the env var if available. Do NOT fall back to Haiku for cost savings — answer quality is the product's core value proposition.
 
 **Exception:** If Anthropic API returns 529 (overloaded), the current code raises an exception. Consider adding a single retry with 2s backoff before failing.
 
@@ -684,7 +708,7 @@ If `ANTHROPIC_MODEL` env var is not set, the system defaults to `claude-sonnet-4
 
 ### 12.1 What Works at MVP Scale (1-100 concurrent users)
 
-- **SQLite + WAL mode** — WAL allows concurrent reads during writes. At MVP scale, this is fine. SQLite handles thousands of reads/sec.
+- **SQLite + WAL mode** — WAL allows concurrent reads during writes. Writes are still serialized, but at MVP scale (~10-100 writes/min for quota + history), this is well within SQLite's capabilities. Read throughput is thousands/sec.
 - **In-memory semantic cache** — `np.ndarray` with 1000 entries max. Matrix multiply for lookup is <1ms even at 1000 entries.
 - **Single uvicorn worker** — Railway Hobby plan has 1 vCPU. Multiple workers would fight over FAISS index memory. Keep `--workers 1`.
 - **Thread-per-voice-request** — ElevenLabs synthesis is I/O bound. Threading is correct here. Max concurrent threads bounded by audio job registry (500).
@@ -721,7 +745,7 @@ These are explicitly out of scope for this deployment. Document them so we don't
 5. **Answer display** — RichAnswer colors, AudioPlayer bar, AnswerTabs, relevance score display on Sources tab
 6. **History page** — color updates
 7. **Static export** — next.config.ts, test build
-8. **Backend hardening** — Relevance floor (MIN_RELEVANCE_SCORE=0.35), audio cache in DATA_DIR, anonymous rate limit (3 req/IP/hour), voice daily reset quota
+8. **Backend hardening** — Relevance floor (MIN_RELEVANCE_SCORE=0.50, env-configurable), audio cache in DATA_DIR, anonymous rate limit (3 req/IP/hour via dual-window rate limiter), voice daily reset quota (migration SQL), streaming endpoint → `optional_auth`
 9. **Backend integration** — FastAPI static serving, optional auth, CORS, localhost:8000 in ALLOWED_ORIGINS default
 10. **Docker** — multi-stage Dockerfile, .dockerignore
 11. **Railway deploy** — push, set env vars, persistent volume at /data, verify health check
