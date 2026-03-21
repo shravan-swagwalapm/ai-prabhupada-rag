@@ -76,10 +76,13 @@ export default function AudioPlayer({ audioId }: Props) {
   }, [audioId]);
 
   const updateProgress = () => {
-    if (audioRef.current) {
-      setProgress(audioRef.current.currentTime);
-      setDuration(audioRef.current.duration || 0);
-      if (state === "playing") {
+    const audio = audioRef.current;
+    if (audio) {
+      setProgress(audio.currentTime);
+      setDuration(audio.duration || 0);
+      // Use the audio element's actual paused state — NOT React state,
+      // which would be stale inside this requestAnimationFrame callback.
+      if (!audio.paused && !audio.ended) {
         animFrameRef.current = requestAnimationFrame(updateProgress);
       }
     }
