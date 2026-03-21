@@ -169,6 +169,20 @@ def decrement_quota(user_id: str, mode: str) -> bool:
         conn.close()
 
 
+def reset_quota(email: str, text_quota: int = DEFAULT_TEXT_QUOTA, voice_quota: int = DEFAULT_VOICE_QUOTA) -> bool:
+    """Reset quota for a user by email. Returns True if user was found and updated."""
+    conn = _get_conn()
+    try:
+        result = conn.execute(
+            "UPDATE users SET text_quota = ?, voice_quota = ? WHERE email = ?",
+            (text_quota, voice_quota, email),
+        )
+        conn.commit()
+        return result.rowcount > 0
+    finally:
+        conn.close()
+
+
 def save_question(
     user_id: str,
     question: str,

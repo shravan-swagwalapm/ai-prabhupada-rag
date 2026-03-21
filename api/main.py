@@ -42,7 +42,7 @@ from api.auth import verify_google_token, create_jwt
 from api.circuit_breaker import CircuitBreaker
 from api.database import (
     init_db, upsert_user, get_user, get_quota, decrement_quota,
-    save_question, get_history, save_waitlist,
+    save_question, get_history, save_waitlist, reset_quota,
 )
 from api.middleware import get_current_user
 from api.models import (
@@ -384,6 +384,35 @@ async def join_waitlist(
     """Add email to waitlist for more quota."""
     save_waitlist(req.email, user_id=user_id)
     return {"status": "ok"}
+
+
+# ── Admin Endpoints ──────────────────────────────────────────────────────────
+
+ADMIN_SECRET = os.getenv("ADMIN_SECRET", "")
+
+
+@app.post("/api/admin/reset-quota")
+async def admin_reset_quota(
+    request: Request,
+):
+    """Reset a user's quota by email. Requires ADMIN_SECRET header."""
+    auth = request.headers.get("x-admin-secret", "")
+    if not ADMIN_SECRET or auth != ADMIN_SECRET:
+        return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+
+    body = await request.json()
+    email = body.get("email", "")
+    text_quota = body.get("text_quota", 5)
+    voice_quota = body.get("voice_quota", 2)
+
+    if not email:
+        return JSONResponse(status_code=400, content={"detail": "email is required"})
+
+    found = reset_quota(email, text_quota=text_quota, voice_quota=voice_quota)
+    if not found:
+        return JSONResponse(status_code=404, content={"detail": f"User {email} not found"})
+
+    return {"status": "ok", "email": email, "text_quota": text_quota, "voice_quota": voice_quota}
 
 
 # ── Query Endpoints (with auth + quota) ──────────────────────────────────────
