@@ -211,7 +211,11 @@ type Block =
   | { type: "bullet-list"; items: string[] };
 
 function parseBlocks(text: string): Block[] {
-  const lines = text.split("\n");
+  // Pre-process: ensure markdown headers start on their own lines.
+  // The AI sometimes generates "...sentence. ## Header" inline.
+  // Exclude # from the lookbehind to avoid splitting "##" into "#\n#".
+  const preprocessed = text.replace(/([^\n#])(#{1,3} )/g, "$1\n$2");
+  const lines = preprocessed.split("\n");
   const blocks: Block[] = [];
   let currentParagraph: string[] = [];
   let currentBullets: string[] = [];
