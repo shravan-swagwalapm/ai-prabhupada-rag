@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 
 interface Props {
   text: string;
@@ -368,10 +368,55 @@ function splitVoiceText(text: string): Block[] {
 // ─── Inline Sanskrit Highlighting ─────────────────────────────────
 
 /**
+ * Process inline markdown: **bold**, *italic*, and Sanskrit highlighting.
+ * Handles nested patterns like **bold *italic* bold**.
+ */
+function renderInlineText(text: string): React.ReactNode {
+  // First pass: split on markdown bold and italic markers
+  const parts: React.ReactNode[] = [];
+  let key = 0;
+
+  // Regex: match **bold**, *italic* (but not ** inside **)
+  // Process bold first, then italic within remaining segments
+  const segments = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+
+  for (const seg of segments) {
+    if (!seg) continue;
+
+    // Bold: **text**
+    if (seg.startsWith("**") && seg.endsWith("**")) {
+      const inner = seg.slice(2, -2);
+      parts.push(
+        <strong key={key++} className="font-semibold" style={{ color: "var(--text-primary)" }}>
+          {inner}
+        </strong>
+      );
+      continue;
+    }
+
+    // Italic: *text*
+    if (seg.startsWith("*") && seg.endsWith("*") && seg.length > 2) {
+      const inner = seg.slice(1, -1);
+      parts.push(
+        <em key={key++} className="italic" style={{ color: "var(--vermillion-bright)" }}>
+          {inner}
+        </em>
+      );
+      continue;
+    }
+
+    // Plain text — apply Sanskrit highlighting
+    parts.push(<React.Fragment key={key++}>{highlightSanskrit(seg)}</React.Fragment>);
+  }
+
+  return parts.length > 0 ? parts : text;
+}
+
+/**
  * Detect Sanskrit phrases within English text and highlight them
  * in Vedabase red-brown italic. Requires 2+ consecutive Sanskrit words.
  */
-function renderInlineText(text: string): React.ReactNode {
+function highlightSanskrit(text: string): React.ReactNode {
   const words = text.split(/(\s+)/); // preserve whitespace
   const result: React.ReactNode[] = [];
   let sanskritRun: string[] = [];
@@ -389,7 +434,6 @@ function renderInlineText(text: string): React.ReactNode {
     if (sanskritRun.length > 0) {
       const joined = sanskritRun.join("");
       const sanskritWordCount = countSanskritWords(joined);
-      // Highlight if 2+ consecutive Sanskrit words (lowered from 3)
       if (sanskritWordCount >= 2) {
         flushNormal();
         result.push(
@@ -406,7 +450,6 @@ function renderInlineText(text: string): React.ReactNode {
 
   for (const token of words) {
     if (/^\s+$/.test(token)) {
-      // Whitespace — add to current run
       if (sanskritRun.length > 0) {
         sanskritRun.push(token);
       } else {
