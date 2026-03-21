@@ -11,7 +11,7 @@ import ShareBar from "@/components/ShareBar";
 import { queryStream, type Passage } from "@/lib/api";
 
 export default function Home() {
-  const { user, isAuthenticated, isLoading: authLoading, refreshUser } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, refreshUser, logout } = useAuth();
   const router = useRouter();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -189,26 +189,33 @@ export default function Home() {
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </a>
-          {user?.photo_url ? (
-            <img
-              src={user.photo_url}
-              alt={user.name}
-              className="w-9 h-9 rounded-full shadow-sm"
-              style={{ border: "2px solid var(--glass-border-hover)" }}
-            />
-          ) : (
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center"
-              style={{
-                background: "linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.08))",
-                border: "2px solid var(--glass-border-hover)",
-              }}
-            >
-              <span className="text-sm font-sans font-semibold" style={{ color: "var(--text-primary)" }}>
-                {user?.name?.charAt(0)?.toUpperCase() || "?"}
-              </span>
-            </div>
-          )}
+          <button
+            onClick={logout}
+            className="rounded-full cursor-pointer transition-opacity hover:opacity-80"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            {user?.photo_url ? (
+              <img
+                src={user.photo_url}
+                alt={user.name}
+                className="w-9 h-9 rounded-full shadow-sm"
+                style={{ border: "2px solid var(--glass-border-hover)" }}
+              />
+            ) : (
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center"
+                style={{
+                  background: "linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.08))",
+                  border: "2px solid var(--glass-border-hover)",
+                }}
+              >
+                <span className="text-sm font-sans font-semibold" style={{ color: "var(--text-primary)" }}>
+                  {user?.name?.charAt(0)?.toUpperCase() || "?"}
+                </span>
+              </div>
+            )}
+          </button>
         </div>
       </div>
 

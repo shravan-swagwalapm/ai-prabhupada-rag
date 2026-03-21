@@ -47,12 +47,12 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Large data files (too big for git — stored on Railway volume)
+# Large data files (too big for git without LFS)
 embeddings/
 embeddings_optimized/
-faiss_indexes/
 embeddings_cache.db
 data_local/
+# faiss_indexes/ tracked via Git LFS (see .gitattributes)
 
 # Build output
 web/out/
