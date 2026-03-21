@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-21
 **Status:** Design approved, pending implementation
-**Scope:** Visual refinement, anonymous trial, share feature, static export, Railway deploy
+**Scope:** Visual refinement, auth-first flow, share feature, static export, Railway deploy
 
 ---
 
@@ -14,7 +14,9 @@
 | Deployment model | Static export + Railway single service | Zero Node.js overhead, one service, cheapest |
 | Visual direction | Traditional Temple ("Temple at Dusk") | Aligns with existing codebase palette, ISKCON devotees feel at home |
 | FAISS index shipping | Baked into Docker image | Instant cold start, no volume config |
-| Auth flow | 2 free questions without login | Let users experience the magic before sign-in friction |
+| Auth flow | Google Sign-In required before any queries | Simpler flow, clean user tracking, email for future payment gate |
+| Quota | 5 text + 2 voice per user | Generous enough to demonstrate value, voice capped for cost control |
+| Post-quota gate | Email collection wall (payment gateway later) | Capture intent now, monetize later |
 | Scope | Core polish + sharing + deploy | Ship today, landing page is a future session |
 | Architecture approach | Refine in-place | Preserve working SSE/RichAnswer/AudioPlayer, only change visual layer |
 | Title font | Cormorant Garamond 600 | Full Unicode for Sanskrit diacriticals (ṛ ṣ ṇ ā ī ū) |
@@ -107,12 +109,12 @@ All animations use CSS only — no JS animation libraries needed.
 **Current:** Google Sign-In gate, redirects to `/` if logged in.
 
 **Changes:**
-- Add "Ask 2 Free Questions ✦" as primary CTA (gold, prominent) above Google Sign-In
-- Clicking it sets `localStorage.setItem('prabhupada_anon_mode', 'true')` and navigates to `/`
+- Google Sign-In as the sole CTA (gold, prominent) — "Sign In to Ask Prabhupada ✦"
 - Update avatar container with pulsing ring animations
 - Replace static divider with arati flame component
 - Title font → Cormorant Garamond 600 for "Hare Kṛṣṇa"
 - Add scripture count badge: "161,724 sacred passages indexed"
+- Subtitle: "5 questions free · Voice answers included"
 - Update all colors to Temple at Dusk palette
 
 ### 3.2 Main Page (`app/page.tsx`)
@@ -120,10 +122,9 @@ All animations use CSS only — no JS animation libraries needed.
 **Current:** Auth-gated, redirects to `/auth` if not logged in.
 
 **Changes:**
-- Allow access when `prabhupada_anon_mode` is set in localStorage
-- Track anonymous query count: `prabhupada_anon_count` in localStorage
-- When count >= 2 and not authenticated → show soft gate modal (new component)
-- For anonymous users: skip auth header in API calls, pass `?anon=true` (backend serves without quota check, limited to 2)
+- Auth-gated as before — redirects to `/auth` if not logged in (no anonymous mode)
+- Show remaining quota in header: "3 of 5 questions left" (text) + "1 of 2 voice left"
+- When text or voice quota hits 0 → show SubscribeGate modal
 - Update greeting to use Cormorant Garamond 600
 - Apply Temple at Dusk colors throughout
 - Glass header with `backdrop-filter: blur(12px)`
@@ -168,17 +169,29 @@ interface ShareBarProps {
 
 **Position:** Fixed at bottom of answer screen, glass backdrop-blur background.
 
-### 3.6 New Component: SoftGate.tsx
+### 3.6 New Component: SubscribeGate.tsx
 
-Replaces `QuotaWall.tsx` behavior for anonymous users.
+Replaces `QuotaWall.tsx` when quota is exhausted. Collects email for future payment integration.
 
 ```tsx
-interface SoftGateProps {
-  onSignIn: () => void;
+interface SubscribeGateProps {
+  quotaType: 'text' | 'voice';  // Which quota was exhausted
+  userEmail: string;             // Pre-fill from Google auth
+  onSubmit: (email: string) => void;
+  onDismiss: () => void;
 }
 ```
 
-**Content:** "You've tasted the nectar" heading, devotional subtitle, animated arati flames, Google Sign-In CTA, footer note about saved answers.
+**Content:**
+- "You've tasted the nectar" heading (Cormorant Garamond 600)
+- Devotional subtitle: "Unlock unlimited access to Prabhupada's wisdom"
+- Show what they've used: "You've asked 5 questions and received 2 voice answers"
+- Email input (pre-filled from Google auth, editable)
+- "Join Waitlist ✦" CTA button (gold)
+- Footer: "We'll notify you when unlimited access is available"
+- Animated arati flames divider
+
+**Backend:** Reuse existing `POST /api/waitlist` endpoint — already accepts `email` + `user_id`. No new endpoint needed.
 
 ### 3.7 New Component: AratiDivider.tsx
 
@@ -377,67 +390,62 @@ If the build fails, document which components need `'use client'` or Suspense wr
 
 ---
 
-## 5. Anonymous Trial System
+## 5. Auth-First Flow + Quota System
 
-### 5.1 Frontend (localStorage)
+### 5.1 Flow
 
-```typescript
-const ANON_COUNT_KEY = 'prabhupada_anon_count';
-const ANON_MODE_KEY = 'prabhupada_anon_mode';
-const MAX_ANON_QUERIES = 2;
-
-function getAnonCount(): number {
-  return parseInt(localStorage.getItem(ANON_COUNT_KEY) || '0', 10);
-}
-
-function incrementAnonCount(): void {
-  const count = getAnonCount() + 1;
-  localStorage.setItem(ANON_COUNT_KEY, count.toString());
-}
-
-function isAnonExhausted(): boolean {
-  return getAnonCount() >= MAX_ANON_QUERIES;
-}
+```
+User visits app → /auth screen → Google Sign-In → /
+                                                   ↓
+                                        5 text + 2 voice quota
+                                                   ↓
+                                        Quota exhausted → SubscribeGate (email)
+                                                   ↓
+                                        Waitlist saved → "We'll notify you"
 ```
 
-### 5.2 Backend (api/main.py)
+No anonymous access. Every query is tied to a user. This simplifies rate limiting, history, and future payment integration.
 
-**Required code change:** Replace `Depends(get_current_user)` with `Depends(optional_auth)` on BOTH `/api/query` and `/api/query/stream` endpoints. Current code at `api/main.py:528` uses `get_current_user` which returns 401 for unauthenticated requests — this blocks anonymous users.
+### 5.2 Quota Configuration
+
+**Database change** (`api/database.py`):
 
 ```python
-# CHANGE FROM (current):
-user_id: str = Depends(get_current_user)
+# Change from:
+DEFAULT_TEXT_QUOTA = 3
+DEFAULT_VOICE_QUOTA = 3
 
-# CHANGE TO:
-@app.get("/api/query/stream")
-async def query_stream(
-    request: Request,
-    question: str = Query(..., min_length=1, max_length=500),
-    top_k: int = Query(default=5, ge=1, le=20),
-    include_voice: bool = Query(default=False),
-    anon: bool = Query(default=False),
-    user_id: Optional[str] = Depends(optional_auth),  # Returns None for anon
-):
+# Change to:
+DEFAULT_TEXT_QUOTA = 5
+DEFAULT_VOICE_QUOTA = 2
 ```
 
-- If `anon=True` and `user_id is None`: allow query but skip quota/history
-- Rate limiting still applies (per-IP) — **stricter for anonymous**: 3 req/IP/hour (vs 10 req/60s for authenticated)
-- Voice disabled for anonymous users (`include_voice` forced to False)
-- Anonymous rate limit: refactor `_is_rate_limited()` to accept a `window_secs` and `max_requests` param, then call with `(ip, 3600, 3)` for anonymous vs `(ip, 60, 10)` for authenticated
+All new users get 5 text + 2 voice. Existing users keep their current quota (no migration needed — only the default for new rows changes).
 
-```python
-def _is_rate_limited(client_ip: str, window_secs: int = None, max_requests: int = None) -> bool:
-    """Rate limit with configurable window. Defaults to env var settings."""
-    window_secs = window_secs or _RATE_LIMIT_WINDOW_SECS
-    max_requests = max_requests or _RATE_LIMIT_REQUESTS
-    # ... existing sliding window logic with parameterized values
+### 5.3 Backend (No Auth Changes Needed)
+
+Both endpoints already use `Depends(get_current_user)` which requires authentication. This is correct for auth-first. **No changes to auth middleware.**
+
+The existing quota check + 402 response (`api/main.py:410-421`) already handles exhausted quota. The frontend just needs to show `SubscribeGate` when it receives a 402.
+
+Rate limiting stays as-is: 10 req/60s per IP for all authenticated users. No dual-window needed since there are no anonymous users.
+
+### 5.4 Frontend Quota Display
+
+Show remaining quota in the main page header:
+
+```tsx
+// From /api/user response (already returns text_quota, voice_quota)
+<QuotaBar textRemaining={quota.text_quota} voiceRemaining={quota.voice_quota} />
 ```
 
-### 5.3 Edge Cases
+When API returns 402 → show `SubscribeGate` modal instead of `QuotaWall`.
 
-- User clears localStorage → gets 2 more free questions (acceptable for MVP)
-- User signs in after anonymous questions → anonymous answers NOT transferred (too complex for MVP)
-- User in private/incognito → gets 2 questions per session (acceptable)
+### 5.5 Edge Cases
+
+- User creates multiple Google accounts → gets 5+2 per account (acceptable for MVP — not worth preventing)
+- Quota never resets (lifetime) — this is intentional for launch. Daily reset can be added when payment is integrated
+- Voice quota exhausted but text remaining → user can still ask text-only questions, voice toggle disabled with tooltip "Voice limit reached"
 
 ---
 
@@ -504,21 +512,22 @@ function formatAnswerForShare(question: string, answer: string): string {
 Dispatch `superpowers:requesting-code-review` agent with review context:
 
 **Critical checks:**
-1. **Auth bypass** — Can anonymous users access more than 2 queries? Is rate limiting still active?
-2. **XSS** — Is user input sanitized in ShareBar (clipboard, tweet intent)?
-3. **CORS** — Is `ALLOWED_ORIGINS` properly configured for Railway?
-4. **Static serving** — Does `StaticFiles(html=True)` correctly serve SPA routes without breaking API routes?
-5. **Font loading** — Are Google Fonts loaded with `display=swap` to prevent FOIT?
-6. **localStorage** — Is anonymous count tamper-resistant enough for MVP? (Answer: yes — it's just a friction gate, not a security boundary)
+1. **Auth enforced** — Can unauthenticated users reach any query endpoint? (Should get 401)
+2. **Quota enforced** — Does 402 fire after 5 text or 2 voice queries? Can user bypass quota?
+3. **XSS** — Is user input sanitized in ShareBar (clipboard, tweet intent)?
+4. **CORS** — Is `ALLOWED_ORIGINS` properly configured for Railway?
+5. **Static serving** — Does `StaticFiles(html=True)` correctly serve SPA routes without breaking API routes?
+6. **Font loading** — Are Google Fonts loaded with `display=swap` to prevent FOIT?
 7. **Docker** — Are secrets excluded from image? Is `.env` in `.dockerignore`?
 8. **Memory** — Does FAISS index fit in Railway Hobby plan's 8GB RAM?
+9. **SubscribeGate** — Does email submission hit `/api/waitlist`? Is it pre-filled from Google auth?
 
 **Answer quality checks:**
 1. **Relevance floor** — Low-relevance queries (<50%) show graceful "no match" message, not hallucinated answers
-2. **Voice quota** — Daily reset working, not lifetime depletion
+2. **Voice quota** — Correctly caps at 2 voice queries per user, shows disabled toggle when exhausted
 3. **Audio persistence** — Audio files stored in `DATA_DIR` (persistent volume), not ephemeral `api/audio_cache/`
 4. **Semantic cache** — Cache hits return correct mode (voice cached answer shouldn't serve as text answer)
-5. **Cost ceiling** — ElevenLabs usage trackable via dashboard, voice disabled for anonymous
+5. **Cost ceiling** — ElevenLabs usage trackable via dashboard, voice capped at 2/user
 
 **Informational checks:**
 1. Dead code removed (old color variables, unused components)
@@ -532,8 +541,8 @@ Dispatch `superpowers:requesting-code-review` agent with review context:
 ## 9. Files Changed (Expected)
 
 ### Modified
-- `web/app/page.tsx` — anonymous trial logic, Temple at Dusk styling
-- `web/app/auth/page.tsx` — "Try 2 Free" CTA, pulsing rings, arati flames
+- `web/app/page.tsx` — quota display, SubscribeGate trigger on 402, Temple at Dusk styling
+- `web/app/auth/page.tsx` — "Sign In to Ask Prabhupada" CTA, pulsing rings, arati flames
 - `web/app/history/page.tsx` — updated colors
 - `web/app/layout.tsx` — Google Fonts link, updated metadata
 - `web/app/globals.css` — complete color/animation overhaul
@@ -545,13 +554,11 @@ Dispatch `superpowers:requesting-code-review` agent with review context:
 - `web/components/QuestionInput.tsx` — styling, pill updates
 - `web/components/AnswerTabs.tsx` — tab styling
 - `web/components/QuotaBar.tsx` — color updates
-- `web/components/QuotaWall.tsx` — replaced by SoftGate for anon users
-- `web/components/AuthProvider.tsx` — support anonymous mode
-- `web/lib/api.ts` — add `anon` param to query functions
-- `web/lib/auth.ts` — add anonymous mode helpers
-- `api/main.py` — static file serving, optional auth for anon, relevance floor, audio cache in DATA_DIR, anon rate limit
-- `api/middleware.py` — optional_auth dependency
-- `api/database.py` — voice daily reset fields (voice_uses_today, voice_reset_date)
+- `web/components/QuotaWall.tsx` — replaced by SubscribeGate for quota-exhausted users
+- `web/components/AuthProvider.tsx` — no anonymous mode needed (simpler)
+- `web/lib/api.ts` — no `anon` param needed (simpler)
+- `api/main.py` — static file serving, relevance floor, audio cache in DATA_DIR
+- `api/database.py` — update DEFAULT_TEXT_QUOTA=5, DEFAULT_VOICE_QUOTA=2
 - `Dockerfile` — multi-stage build
 - `.dockerignore` — new file
 - `railway.toml` — updated config
@@ -559,7 +566,7 @@ Dispatch `superpowers:requesting-code-review` agent with review context:
 
 ### New
 - `web/components/ShareBar.tsx` — copy/share/tweet
-- `web/components/SoftGate.tsx` — anonymous trial exhausted modal
+- `web/components/SubscribeGate.tsx` — quota exhausted modal with email collection
 - `web/components/AratiDivider.tsx` — reusable flame divider
 - `.dockerignore` — exclude large files from image
 
@@ -667,34 +674,31 @@ AUDIO_CACHE_DIR = Path(os.getenv("DATA_DIR", str(PROJECT_ROOT / "data_local"))) 
 
 This single-line change means cached voice responses survive redeploys. At $0.15-0.30 per generation, this saves significant money.
 
-**C. Per-user voice daily cap (NEW):**
-Default `voice_quota=3` in database is a lifetime cap — once exhausted, user can never use voice again. This is a product bug.
+**C. Lifetime quota (intentional, not a bug):**
+With auth-first, each user gets exactly 5 text + 2 voice queries. This is a product choice:
+- **Cost is bounded**: max $0.51 per user, forever
+- **Creates urgency**: users value their limited questions, ask better ones
+- **Clean upgrade path**: when payment is integrated, paid users get unlimited
+- **No migration needed**: just change `DEFAULT_TEXT_QUOTA=5` and `DEFAULT_VOICE_QUOTA=2` in `database.py`
 
-**Fix in implementation:** Change voice quota to a daily reset model:
-- Add two columns to users table: `voice_uses_today INTEGER DEFAULT 0` and `voice_reset_date TEXT`
-- Reset counter when `voice_reset_date != today` (check at query time, not via cron)
-- Default: 3 voice queries per day per user
-- Keep existing `voice_quota` column as-is (unused but harmless — avoids migration risk)
+Existing users with `voice_quota=3` and `text_quota=3` keep their existing values — the new defaults only apply to new signups.
 
-**Migration SQL** (add to `init_db()` after table creation):
-```sql
--- Idempotent: ALTER TABLE fails silently if columns exist
-ALTER TABLE users ADD COLUMN voice_uses_today INTEGER DEFAULT 0;
-ALTER TABLE users ADD COLUMN voice_reset_date TEXT;
-```
-
-**Note:** SQLite's `ALTER TABLE ADD COLUMN` is safe — existing rows get the default value. Wrap each statement in try/except to handle the "duplicate column name" error on subsequent startups. Existing users with `voice_quota=0` are NOT affected — the new daily system is independent of the old lifetime quota.
-
-**D. Anonymous users: text-only (already in spec):**
-Section 5.2 already disables voice for anonymous users. This is the most important cost control — unauthenticated users get zero ElevenLabs costs.
+**D. Auth-first caps cost naturally:**
+No anonymous access means every query costs quota. With 5 text + 2 voice per user (lifetime), cost per user is bounded:
+- Max text cost per user: 5 × $0.022 = **$0.11**
+- Max voice cost per user: 2 × $0.20 = **$0.40**
+- **Max total per user: $0.51** (lifetime, one-time)
 
 **E. Monthly cost ceiling:**
-At full capacity (100 users × 3 voice/day × 30 days):
-- Voice: 9,000 × $0.20 = **$1,800/month** ← dangerous
-- Text: 9,000 × $0.022 = **$198/month** ← manageable
-- With 30% semantic cache hit rate: voice drops to **$1,260/month**, text to **$139/month**
+At 100 new signups/month (optimistic MVP):
+- Voice: 200 × $0.20 = **$40/month**
+- Text: 500 × $0.022 = **$11/month**
+- **Total: ~$51/month** ← very manageable
 
-**Mitigation:** Keep initial voice quota at 3/day, monitor via ElevenLabs dashboard. At 10 active users (realistic MVP), monthly voice cost is ~$180. Cache popular questions' audio permanently on the persistent volume.
+At 1000 new signups/month:
+- **Total: ~$510/month** ← still manageable, and by then payment gate should be live
+
+**Why this is better than daily reset:** Lifetime quota gives a hard ceiling per user. No user can run up unlimited costs. When payment is added later, paid users get unlimited access funded by revenue.
 
 ### 11.3 Model Fallback
 
@@ -739,14 +743,14 @@ These are explicitly out of scope for this deployment. Document them so we don't
 ## 13. Implementation Order
 
 1. **Visual foundation** — globals.css, tailwind.config.ts, layout.tsx (fonts)
-2. **Reusable components** — AratiDivider, ShareBar, SoftGate
-3. **Auth flow** — auth page redesign, AuthProvider anonymous mode
-4. **Main page** — query screen styling, anonymous trial logic
+2. **Reusable components** — AratiDivider, ShareBar, SubscribeGate
+3. **Auth flow** — auth page redesign (Sign-In CTA, no anonymous mode)
+4. **Main page** — query screen styling, quota display, SubscribeGate on 402
 5. **Answer display** — RichAnswer colors, AudioPlayer bar, AnswerTabs, relevance score display on Sources tab
 6. **History page** — color updates
 7. **Static export** — next.config.ts, test build
-8. **Backend hardening** — Relevance floor (MIN_RELEVANCE_SCORE=0.50, env-configurable), audio cache in DATA_DIR, anonymous rate limit (3 req/IP/hour via dual-window rate limiter), voice daily reset quota (migration SQL), streaming endpoint → `optional_auth`
-9. **Backend integration** — FastAPI static serving, optional auth, CORS, localhost:8000 in ALLOWED_ORIGINS default
+8. **Backend hardening** — Relevance floor (MIN_RELEVANCE_SCORE=0.50, env-configurable), audio cache in DATA_DIR, update default quotas (5 text, 2 voice)
+9. **Backend integration** — FastAPI static serving, CORS (add localhost:8000 to defaults)
 10. **Docker** — multi-stage Dockerfile, .dockerignore
 11. **Railway deploy** — push, set env vars, persistent volume at /data, verify health check
 12. **Post-deploy verification** — all screens on mobile, voice works, share works, semantic cache populated, audio persists across simulated redeploy
