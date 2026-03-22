@@ -6,8 +6,8 @@ export const MAX_QUESTION_LENGTH = 500;
 export interface Passage {
   scripture: string;
   text: string;
-  similarity: number;
-  chunk_id: string;
+  similarity?: number;
+  chunk_id?: string;
 }
 
 export interface QueryResponse {

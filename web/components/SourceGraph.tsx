@@ -20,6 +20,7 @@ interface SourceGraphProps {
   onCardTap: (index: number) => void;
   onCenterTap: () => void;
   compact?: boolean;
+  instanceId?: string;
 }
 
 interface GraphNode extends SimulationNodeDatum {
@@ -39,6 +40,7 @@ export default function SourceGraph({
   onCardTap,
   onCenterTap,
   compact = false,
+  instanceId = "main",
 }: SourceGraphProps) {
   const viewW = compact ? 320 : 400;
   const viewH = compact ? 240 : 300;
@@ -103,11 +105,11 @@ export default function SourceGraph({
         style={{ maxWidth: compact ? 320 : 420 }}
       >
         <defs>
-          <radialGradient id="sourceGraphCenterGlow">
+          <radialGradient id={`sgGlow-${instanceId}`}>
             <stop offset="0%" stopColor="rgba(201,168,76,0.3)" />
             <stop offset="100%" stopColor="rgba(201,168,76,0)" />
           </radialGradient>
-          <radialGradient id="sourceGraphCenterSolid">
+          <radialGradient id={`sgSolid-${instanceId}`}>
             <stop offset="0%" stopColor="rgba(201,168,76,0.9)" />
             <stop offset="100%" stopColor="rgba(201,168,76,0.5)" />
           </radialGradient>
@@ -130,7 +132,7 @@ export default function SourceGraph({
         ))}
 
         {/* Center glow */}
-        <circle cx={cx} cy={cy} r={compact ? 35 : 45} fill="url(#sourceGraphCenterGlow)" />
+        <circle cx={cx} cy={cy} r={compact ? 35 : 45} fill={`url(#sgGlow-${instanceId})`} />
 
         {/* Center pulse ring */}
         <circle
@@ -222,7 +224,7 @@ export default function SourceGraph({
           aria-label="View all sources"
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onCenterTap(); }}
         >
-          <circle cx={cx} cy={cy} r={compact ? 11 : 14} fill="url(#sourceGraphCenterSolid)" />
+          <circle cx={cx} cy={cy} r={compact ? 11 : 14} fill={`url(#sgSolid-${instanceId})`} />
           <circle cx={cx} cy={cy} r={compact ? 6 : 8} fill="rgba(201,168,76,0.9)" />
           <text
             x={cx}

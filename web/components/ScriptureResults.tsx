@@ -43,7 +43,7 @@ export default function ScriptureResults({ passages, isLoading }: Props) {
   if (passages.length === 0) return null;
 
   // Calculate top relevance for header
-  const topRelevance = Math.max(...passages.map((p) => p.similarity * 100));
+  const topRelevance = Math.max(...passages.map((p) => (p.similarity || 0.5) * 100));
 
   return (
     <div className="w-full max-w-3xl mx-auto">
@@ -64,7 +64,7 @@ export default function ScriptureResults({ passages, isLoading }: Props) {
           const shortName = getScriptureShort(p.scripture);
           const icon = getScriptureIcon(p.scripture);
           const colorClass = getScriptureColor(p.scripture);
-          const matchPct = p.similarity * 100;
+          const matchPct = (p.similarity || 0.5) * 100;
           const matchPercent = matchPct.toFixed(0);
           const relevanceColor = getRelevanceColor(matchPct);
 

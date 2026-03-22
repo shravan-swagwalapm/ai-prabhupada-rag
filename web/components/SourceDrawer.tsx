@@ -40,7 +40,7 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
         style={{
           background: "rgba(0,0,0,0.6)",
           opacity: isOpen ? 1 : 0,
-          pointerEvents: isOpen ? "all" : "none",
+          pointerEvents: isOpen ? "auto" : "none",
         }}
         onClick={onClose}
       />
@@ -103,6 +103,8 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
                 <button
                   onClick={() => toggleAccordion(i)}
                   className="w-full text-left px-4 py-3.5 flex items-center justify-between"
+                  aria-expanded={isExpanded}
+                  aria-controls={`drawer-passage-${i}`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <span className="text-base shrink-0">{icon}</span>
@@ -142,6 +144,7 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
 
                 {/* Body — expandable */}
                 <div
+                  id={`drawer-passage-${i}`}
                   className="overflow-hidden transition-all duration-300 ease-out"
                   style={{ maxHeight: isExpanded ? "500px" : "0" }}
                 >

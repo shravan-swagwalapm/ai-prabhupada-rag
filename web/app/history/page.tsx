@@ -169,6 +169,7 @@ export default function HistoryPage() {
                               onCardTap={(i) => setSelectedHistoryPassage(selectedHistoryPassage === i ? null : i)}
                               onCenterTap={() => setHistoryDrawerOpen(true)}
                               compact
+                              instanceId={`history-${entry.id}`}
                             />
                             <SourceDetail
                               passage={selectedHistoryPassage !== null ? historyPassages[selectedHistoryPassage] : null}
