@@ -11,7 +11,7 @@ import {
   type SimulationLinkDatum,
 } from "d3-force";
 import type { Passage } from "@/lib/api";
-import { getScriptureShort, getScriptureName, getScriptureSVGColor } from "@/lib/scriptures";
+import { getScriptureShort, getScriptureSVGColor } from "@/lib/scriptures";
 
 interface SourceGraphProps {
   passages: Passage[];
@@ -151,8 +151,7 @@ export default function SourceGraph({
           if (!p) return null;
           const svgColor = getScriptureSVGColor(p.scripture);
           const shortName = getScriptureShort(p.scripture);
-          const fullName = getScriptureName(p.scripture, p.chunk_id);
-          const verseRef = fullName.includes(",") ? fullName.substring(fullName.indexOf(",") + 2) : "";
+          const abbrev = p.scripture.toUpperCase();
           const matchPct = ((p.similarity || 0.5) * 100).toFixed(0);
           const isSelected = selectedIndex === i;
 
@@ -164,7 +163,7 @@ export default function SourceGraph({
               onClick={() => onCardTap(i)}
               role="button"
               tabIndex={0}
-              aria-label={`${shortName}: ${verseRef || "passage"}, ${matchPct}% match`}
+              aria-label={`${shortName}, ${matchPct}% match`}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onCardTap(i); }}
             >
               <rect
@@ -186,20 +185,18 @@ export default function SourceGraph({
                 fontFamily="Georgia, serif"
                 fontWeight="bold"
               >
-                {shortName.length > 16 ? shortName.slice(0, 14) + "…" : shortName}
+                {abbrev}
               </text>
-              {verseRef && (
-                <text
-                  x={pos.x}
-                  y={pos.y + 2}
-                  textAnchor="middle"
-                  fill="rgba(255,255,255,0.35)"
-                  fontSize={subFontSize}
-                  fontFamily="Georgia, serif"
-                >
-                  {verseRef.length > 20 ? verseRef.slice(0, 18) + "…" : verseRef}
-                </text>
-              )}
+              <text
+                x={pos.x}
+                y={pos.y + 2}
+                textAnchor="middle"
+                fill="rgba(255,255,255,0.35)"
+                fontSize={subFontSize}
+                fontFamily="Georgia, serif"
+              >
+                {shortName.length > 14 ? shortName.slice(0, 12) + "…" : shortName}
+              </text>
               <text
                 x={pos.x}
                 y={pos.y + cardH / 3}
