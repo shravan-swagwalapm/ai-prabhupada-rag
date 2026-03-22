@@ -176,3 +176,13 @@ textarea:focus {
 .audio-progress {
   transition: width 80ms linear;
 }
+
+/* Source graph — node interactions */
+.graph-node-scripture {
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.15s;
+}
+.graph-node-scripture:hover {
+  filter: drop-shadow(0 0 6px rgba(201, 168, 76, 0.3));
+  transform: scale(1.04);
+}
