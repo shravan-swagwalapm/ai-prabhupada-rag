@@ -556,7 +556,12 @@ async def query_scriptures(
     # Decrement quota + save history
     if ai_answer:
         decrement_quota(user_id, mode)
-        passages_json = json_module.dumps([{"scripture": r.get("scripture", ""), "text": r.get("text", "")[:200]} for r in relevant_results])
+        passages_json = json_module.dumps([
+            {"scripture": r.get("scripture", ""), "text": r.get("text", ""),
+             "similarity": round(r.get("similarity", 0.0), 4),
+             "chunk_id": str(r.get("chunk_id", ""))}
+            for r in relevant_results
+        ])
         save_question(user_id, req.question, ai_answer, mode, audio_id, passages_json)
 
         # Store in semantic cache
@@ -637,6 +642,7 @@ async def query_stream(
                 "scripture": r.get("scripture", ""),
                 "text": r.get("text", ""),
                 "similarity": r.get("similarity", 0.0),
+                "chunk_id": str(r.get("chunk_id", "")),
             }
             for r in raw_results
         ]
@@ -654,6 +660,9 @@ async def query_stream(
             cached = _answer_cache.lookup(embedding, mode)
             if cached:
                 logger.info("Stream cache HIT for: '%s...'", question[:40])
+                # Re-emit passages so the frontend graph renders on cache hits
+                cached_passages = json_module.loads(cached.get("passages_json", "[]"))
+                yield f"data: {json_module.dumps({'type': 'passages', 'data': cached_passages})}\n\n"
                 # Emit cached answer as sentence chunks with small delays (preserves UX)
                 cached_text = cached["answer_text"]
                 import re as re_mod
@@ -715,7 +724,9 @@ async def query_stream(
             answer_text = "".join(full_answer)
             decrement_quota(user_id, mode)
             passages_json = json_module.dumps([
-                {"scripture": r.get("scripture", ""), "text": r.get("text", "")[:200]}
+                {"scripture": r.get("scripture", ""), "text": r.get("text", ""),
+                 "similarity": round(r.get("similarity", 0.0), 4),
+                 "chunk_id": str(r.get("chunk_id", ""))}
                 for r in raw_results
             ])
             save_question(user_id, question, answer_text, mode, audio_id, passages_json)
