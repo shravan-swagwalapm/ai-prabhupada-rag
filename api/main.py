@@ -660,9 +660,6 @@ async def query_stream(
             cached = _answer_cache.lookup(embedding, mode)
             if cached:
                 logger.info("Stream cache HIT for: '%s...'", question[:40])
-                # Re-emit passages so the frontend graph renders on cache hits
-                cached_passages = json_module.loads(cached.get("passages_json", "[]"))
-                yield f"data: {json_module.dumps({'type': 'passages', 'data': cached_passages})}\n\n"
                 # Emit cached answer as sentence chunks with small delays (preserves UX)
                 cached_text = cached["answer_text"]
                 import re as re_mod
