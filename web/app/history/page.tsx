@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { fetchHistory, getAudioUrl, type HistoryEntry } from "@/lib/api";
+import { fetchHistory, getAudioUrl, parsePassages, type HistoryEntry } from "@/lib/api";
 import RichAnswer from "@/components/RichAnswer";
 import AudioPlayer from "@/components/AudioPlayer";
+import SourceGraph from "@/components/SourceGraph";
+import SourceDetail from "@/components/SourceDetail";
+import SourceDrawer from "@/components/SourceDrawer";
 
 export default function HistoryPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -15,6 +18,14 @@ export default function HistoryPage() {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedHistoryPassage, setSelectedHistoryPassage] = useState<number | null>(null);
+  const [historyDrawerOpen, setHistoryDrawerOpen] = useState(false);
+
+  // Reset graph state when a different entry is expanded
+  useEffect(() => {
+    setSelectedHistoryPassage(null);
+    setHistoryDrawerOpen(false);
+  }, [expandedId]);
 
   // Auth guard
   useEffect(() => {
@@ -146,6 +157,31 @@ export default function HistoryPage() {
                       {entry.audio_id && (
                         <AudioPlayer audioId={entry.audio_id} />
                       )}
+                      {(() => {
+                        const historyPassages = parsePassages(entry.passages_json);
+                        if (historyPassages.length === 0) return null;
+                        return (
+                          <div className="mt-4">
+                            <SourceGraph
+                              passages={historyPassages}
+                              question={entry.question}
+                              selectedIndex={selectedHistoryPassage}
+                              onCardTap={(i) => setSelectedHistoryPassage(selectedHistoryPassage === i ? null : i)}
+                              onCenterTap={() => setHistoryDrawerOpen(true)}
+                              compact
+                            />
+                            <SourceDetail
+                              passage={selectedHistoryPassage !== null ? historyPassages[selectedHistoryPassage] : null}
+                              onClose={() => setSelectedHistoryPassage(null)}
+                            />
+                            <SourceDrawer
+                              passages={historyPassages}
+                              isOpen={historyDrawerOpen}
+                              onClose={() => setHistoryDrawerOpen(false)}
+                            />
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
