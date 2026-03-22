@@ -171,9 +171,21 @@ Add `"chunk_id": str(r.get("chunk_id", ""))` to the passage dict.
 
 **File**: `api/main.py`, lines 364-372 — add `passages_json=e.get("passages_json")` to HistoryEntry constructor.
 
-### 4. Return passages on cache hits
+### 4. Return passages on stream cache hits
 
-**File**: `api/main.py` — wherever semantic cache hits build a response, include the cached `passages_json`.
+**File**: `api/main.py`, lines 654-676 (stream cache hit path)
+
+The POST cache hit (line 491) already returns `passages` from `raw_results` — no change needed there.
+
+The stream cache hit (line 655) skips the passages SSE event entirely — it jumps straight to emitting `answer_chunk` events. The frontend never receives passages on a stream cache hit, so the graph would be empty.
+
+Fix: after line 655 (`if cached:`), re-emit the passages event using `cached.get("passages_json", "[]")`:
+```python
+cached_passages = json_module.loads(cached.get("passages_json", "[]"))
+yield f"data: {json_module.dumps({'type': 'passages', 'data': cached_passages})}\n\n"
+```
+
+This ensures the frontend gets passages even on cache hits, so the graph always renders.
 
 ## Frontend Type Changes
 
@@ -213,9 +225,10 @@ export function parsePassages(json: string | null): Passage[] {
 - `d3-force` (~12KB gzipped) — force simulation for node positioning
 - `@types/d3-force` (dev only) — TypeScript types
 
-## Reused Utilities (no changes)
+## Reused Utilities
 
 - `web/lib/scriptures.ts` — `getScriptureName`, `getScriptureShort`, `getScriptureIcon`, `getScriptureColor`
+- **New addition to `scriptures.ts`**: `getScriptureSVGColor(code: string): { fill: string; stroke: string }` — returns hex/rgba values for SVG `fill`/`stroke` attributes, since `getScriptureColor()` returns Tailwind classes which don't work inside SVG elements
 - `web/components/ScriptureResults.tsx` — reference for relevance bar pattern (component itself is replaced, not deleted yet)
 
 ## Files Summary
@@ -232,6 +245,7 @@ export function parsePassages(json: string | null): Passage[] {
 | `web/components/AnswerTabs.tsx` | modify | Replace ScriptureResults with SourceGraph + SourceDetail + SourceDrawer |
 | `web/app/page.tsx` | modify | Pass question to AnswerTabs |
 | `web/app/history/page.tsx` | modify | Show graph in expanded history entries |
+| `web/lib/scriptures.ts` | modify | Add `getScriptureSVGColor()` for SVG fill/stroke values |
 | `web/app/globals.css` | modify | Graph node hover/selected styles |
 
 ## Verification
