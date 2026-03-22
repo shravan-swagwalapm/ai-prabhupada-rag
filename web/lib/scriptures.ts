@@ -117,3 +117,27 @@ export function getScriptureColor(code: string): string {
   };
   return colors[code.toLowerCase()] || "text-saffron-300 bg-saffron-500/10 border-saffron-500/20";
 }
+
+/**
+ * Get SVG-compatible color values for a scripture.
+ * Unlike getScriptureColor() which returns Tailwind classes,
+ * this returns raw rgba values for SVG fill/stroke attributes.
+ */
+export function getScriptureSVGColor(code: string): { fill: string; stroke: string; text: string } {
+  const colors: Record<string, { fill: string; stroke: string; text: string }> = {
+    bg: { fill: "rgba(251,191,36,0.06)", stroke: "rgba(251,191,36,0.25)", text: "rgba(251,191,36,0.9)" },
+    sb: { fill: "rgba(249,115,22,0.06)", stroke: "rgba(249,115,22,0.25)", text: "rgba(249,115,22,0.9)" },
+    cc: { fill: "rgba(244,63,94,0.06)", stroke: "rgba(244,63,94,0.25)", text: "rgba(244,63,94,0.9)" },
+    nod: { fill: "rgba(236,72,153,0.06)", stroke: "rgba(236,72,153,0.25)", text: "rgba(236,72,153,0.9)" },
+    noi: { fill: "rgba(217,70,239,0.06)", stroke: "rgba(217,70,239,0.25)", text: "rgba(217,70,239,0.9)" },
+    iso: { fill: "rgba(139,92,246,0.06)", stroke: "rgba(139,92,246,0.25)", text: "rgba(139,92,246,0.9)" },
+    kb: { fill: "rgba(52,211,153,0.06)", stroke: "rgba(52,211,153,0.25)", text: "rgba(52,211,153,0.9)" },
+    tlc: { fill: "rgba(251,146,60,0.06)", stroke: "rgba(251,146,60,0.25)", text: "rgba(251,146,60,0.9)" },
+    tlk: { fill: "rgba(163,230,53,0.06)", stroke: "rgba(163,230,53,0.25)", text: "rgba(163,230,53,0.9)" },
+    tqk: { fill: "rgba(45,212,191,0.06)", stroke: "rgba(45,212,191,0.25)", text: "rgba(45,212,191,0.9)" },
+    lob: { fill: "rgba(251,191,36,0.06)", stroke: "rgba(251,191,36,0.25)", text: "rgba(251,191,36,0.9)" },
+    pop: { fill: "rgba(168,162,158,0.06)", stroke: "rgba(168,162,158,0.25)", text: "rgba(168,162,158,0.9)" },
+    letters: { fill: "rgba(56,189,248,0.06)", stroke: "rgba(56,189,248,0.25)", text: "rgba(56,189,248,0.9)" },
+  };
+  return colors[code.toLowerCase()] || { fill: "rgba(201,168,76,0.06)", stroke: "rgba(201,168,76,0.25)", text: "rgba(201,168,76,0.9)" };
+}

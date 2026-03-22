@@ -39,12 +39,23 @@ export interface HistoryEntry {
   answer_text: string;
   answer_mode: string;
   audio_id: string | null;
+  passages_json: string | null;
   created_at: string;
 }
 
 export interface HistoryResponse {
   entries: HistoryEntry[];
   total: number;
+}
+
+/** Parse passages_json string from history entries into Passage[]. */
+export function parsePassages(json: string | null): Passage[] {
+  if (!json) return [];
+  try {
+    return JSON.parse(json);
+  } catch {
+    return [];
+  }
 }
 
 /** Thrown when user's quota is exhausted (HTTP 402). */
