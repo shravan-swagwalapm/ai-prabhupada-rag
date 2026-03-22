@@ -319,6 +319,7 @@ export default function Home() {
         audioId={audioId}
         voiceEnabled={voiceEnabled}
         isSearching={isSearching}
+        question={currentQuestion}
       />
 
       {/* ShareBar — only show when answer is complete */}

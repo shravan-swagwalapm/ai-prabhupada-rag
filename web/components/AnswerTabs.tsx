@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AIAnswer from "@/components/AIAnswer";
 import AudioPlayer from "@/components/AudioPlayer";
-import ScriptureResults from "@/components/ScriptureResults";
+import SourceGraph from "@/components/SourceGraph";
+import SourceDetail from "@/components/SourceDetail";
+import SourceDrawer from "@/components/SourceDrawer";
 import type { Passage } from "@/lib/api";
 
 interface Props {
@@ -13,9 +15,10 @@ interface Props {
   audioId: string | null;
   voiceEnabled: boolean;
   isSearching: boolean;
+  question: string;
 }
 
-type Tab = "answer" | "references";
+type Tab = "answer" | "sources";
 
 export default function AnswerTabs({
   passages,
@@ -24,8 +27,17 @@ export default function AnswerTabs({
   audioId,
   voiceEnabled,
   isSearching,
+  question,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("answer");
+  const [selectedPassageIndex, setSelectedPassageIndex] = useState<number | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Reset graph state when passages change (new query)
+  useEffect(() => {
+    setSelectedPassageIndex(null);
+    setDrawerOpen(false);
+  }, [passages]);
 
   const hasContent = passages.length > 0 || answer || isStreaming || isSearching;
   if (!hasContent) return null;
@@ -37,9 +49,7 @@ export default function AnswerTabs({
       {/* Tab bar */}
       <div
         className="flex gap-0 mb-6 max-w-xs"
-        style={{
-          borderBottom: "1px solid var(--glass-border)",
-        }}
+        style={{ borderBottom: "1px solid var(--glass-border)" }}
       >
         <button
           onClick={() => setActiveTab("answer")}
@@ -56,30 +66,26 @@ export default function AnswerTabs({
           {activeTab === "answer" && (
             <span
               className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-              style={{
-                background: "linear-gradient(to right, var(--gold-dim), var(--gold), var(--gold-dim))",
-              }}
+              style={{ background: "linear-gradient(to right, var(--gold-dim), var(--gold), var(--gold-dim))" }}
             />
           )}
         </button>
         <button
-          onClick={() => setActiveTab("references")}
+          onClick={() => setActiveTab("sources")}
           className="relative flex-1 px-4 py-2.5 text-sm transition-all duration-200"
           style={{
             fontFamily: "var(--font-display, 'Cinzel', serif)",
             letterSpacing: "0.04em",
-            color: activeTab === "references" ? "var(--text-primary)" : "var(--text-muted)",
+            color: activeTab === "sources" ? "var(--text-primary)" : "var(--text-muted)",
             background: "transparent",
             border: "none",
           }}
         >
-          Sources ({passages.length})
-          {activeTab === "references" && (
+          Sources{passages.length > 0 ? ` (${passages.length})` : ""}
+          {activeTab === "sources" && (
             <span
               className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-              style={{
-                background: "linear-gradient(to right, var(--gold-dim), var(--gold), var(--gold-dim))",
-              }}
+              style={{ background: "linear-gradient(to right, var(--gold-dim), var(--gold), var(--gold-dim))" }}
             />
           )}
         </button>
@@ -92,7 +98,36 @@ export default function AnswerTabs({
           {voiceEnabled && <AudioPlayer audioId={audioId} />}
         </div>
       ) : (
-        <ScriptureResults passages={passages} isLoading={isSearching} />
+        <div>
+          {isSearching ? (
+            <div className="flex items-center gap-3 py-8" style={{ color: "var(--text-secondary)" }}>
+              <div className="relative w-5 h-5">
+                <span className="absolute inset-0 rounded-full animate-ping" style={{ background: "rgba(201,168,76,0.3)" }} />
+                <span className="relative block w-5 h-5 rounded-full" style={{ background: "rgba(201,168,76,0.6)" }} />
+              </div>
+              <span className="font-serif italic">Searching 13 sacred texts...</span>
+            </div>
+          ) : (
+            <>
+              <SourceGraph
+                passages={passages}
+                question={question}
+                selectedIndex={selectedPassageIndex}
+                onCardTap={(i) => setSelectedPassageIndex(selectedPassageIndex === i ? null : i)}
+                onCenterTap={() => setDrawerOpen(true)}
+              />
+              <SourceDetail
+                passage={selectedPassageIndex !== null ? passages[selectedPassageIndex] : null}
+                onClose={() => setSelectedPassageIndex(null)}
+              />
+              <SourceDrawer
+                passages={passages}
+                isOpen={drawerOpen}
+                onClose={() => setDrawerOpen(false)}
+              />
+            </>
+          )}
+        </div>
       )}
     </div>
   );
