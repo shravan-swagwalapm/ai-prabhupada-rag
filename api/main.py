@@ -368,6 +368,7 @@ async def get_user_history(
             answer_text=e["answer_text"],
             answer_mode=e["answer_mode"],
             audio_id=e.get("audio_id"),
+            passages_json=e.get("passages_json"),
             created_at=e["created_at"],
         )
         for e in result["entries"]

@@ -212,7 +212,7 @@ def get_history(user_id: str, limit: int = 20, offset: int = 0) -> Dict[str, Any
     conn = _get_conn()
     try:
         rows = conn.execute(
-            """SELECT id, question, answer_text, answer_mode, audio_id, created_at
+            """SELECT id, question, answer_text, answer_mode, audio_id, passages_json, created_at
                FROM questions WHERE user_id = ?
                ORDER BY created_at DESC LIMIT ? OFFSET ?""",
             (user_id, limit, offset),

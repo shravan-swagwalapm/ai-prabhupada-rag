@@ -33,6 +33,7 @@ class HistoryEntry(BaseModel):
     answer_text: str
     answer_mode: str
     audio_id: Optional[str] = None
+    passages_json: Optional[str] = None
     created_at: str
 
 
