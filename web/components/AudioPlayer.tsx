@@ -124,99 +124,102 @@ export default function AudioPlayer({ audioId }: Props) {
   const progressPct = duration > 0 ? (progress / duration) * 100 : 0;
 
   return (
-    <div className="w-full max-w-3xl mx-auto mt-0">
+    <div className="w-full max-w-3xl mx-auto mt-4">
       <div
-        className="flex items-center gap-4 p-4 rounded-xl shadow-sm"
+        className="overflow-hidden"
         style={{
-          border: "1px solid var(--glass-border)",
-          background: "var(--card)",
+          background: "linear-gradient(135deg, #1A3A6B, #15305A)",
+          borderRadius: 16,
         }}
       >
-        {/* Play/Pause button — double-ring gold glow */}
-        <div
-          className="shrink-0"
-          style={{
-            boxShadow: state === "playing"
-              ? "0 0 0 3px var(--gold-dim), 0 0 0 6px rgba(201,168,76,0.15)"
-              : "none",
-            borderRadius: "9999px",
-            transition: "box-shadow 0.3s ease",
-          }}
-        >
+        {/* Spotify progress line at top — 3px */}
+        <div style={{ height: 3, background: "rgba(250,246,239,0.08)" }}>
+          <div
+            className="h-full transition-[width] duration-100"
+            style={{
+              width: `${progressPct}%`,
+              background: "linear-gradient(to right, #C9A84C, #E0C068)",
+              borderRadius: "0 2px 2px 0",
+            }}
+          />
+        </div>
+
+        <div className="flex items-center gap-4 px-5 py-4">
+          {/* Play button — gold circle */}
           <button
             onClick={togglePlay}
             disabled={state === "generating" || state === "error"}
-            className="flex items-center justify-center rounded-full transition-all disabled:cursor-not-allowed"
+            className="flex items-center justify-center rounded-full transition-all disabled:cursor-not-allowed shrink-0"
             style={{
-              width: "44px",
-              height: "44px",
+              width: 48,
+              height: 48,
               background: state === "generating" || state === "error"
-                ? "rgba(201,168,76,0.12)"
-                : "linear-gradient(135deg, var(--gold), var(--gold-dim))",
+                ? "rgba(201,168,76,0.15)"
+                : "linear-gradient(135deg, #C9A84C, #E0C068)",
               opacity: state === "error" ? 0.4 : 1,
+              boxShadow: state === "playing" ? "0 4px 12px rgba(201,168,76,0.25)" : "none",
             }}
             aria-label={state === "playing" ? "Pause" : "Listen to Prabhupada"}
           >
             {state === "generating" ? (
-              <svg
-                className="w-4 h-4 animate-spin"
-                style={{ color: "var(--gold)" }}
-                fill="none"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-5 h-5 animate-spin" style={{ color: "#C9A84C" }} fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
             ) : state === "playing" ? (
-              <svg className="w-4 h-4" style={{ color: "var(--sanctum)" }} fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" style={{ color: "#1A3A6B" }} fill="currentColor" viewBox="0 0 24 24">
                 <rect x="6" y="4" width="4" height="16" rx="1" />
                 <rect x="14" y="4" width="4" height="16" rx="1" />
               </svg>
             ) : (
-              <svg className="w-4 h-4 ml-0.5" style={{ color: "var(--sanctum)" }} fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 ml-0.5" style={{ color: "#1A3A6B" }} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
             )}
           </button>
-        </div>
 
-        {/* Info + progress */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1.5">
-            <p className="font-sans text-xs font-medium truncate" style={{ color: "var(--text-secondary)" }}>
-              {state === "generating" && "Generating Prabhupada's voice..."}
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <p className="font-sans text-[13px] font-semibold truncate" style={{ color: "rgba(250,246,239,0.9)" }}>
+              {state === "generating" && "Generating Prabhupada\u2019s voice..."}
               {state === "ready" && "Listen to Prabhupada"}
               {state === "playing" && "Prabhupada is speaking..."}
               {state === "paused" && "Paused"}
-              {state === "error" && "Voice not available"}
+              {state === "error" && "Voice unavailable"}
             </p>
-            {duration > 0 && (
-              <span
-                className="text-[10px] font-sans shrink-0 ml-2"
-                style={{
-                  color: "var(--text-muted)",
-                  fontVariantNumeric: "tabular-nums",
-                  fontFamily: "monospace",
-                }}
-              >
-                {formatTime(progress)} / {formatTime(duration)}
-              </span>
-            )}
+            {/* Waveform bars */}
+            <div className="flex items-end gap-[2px] mt-2 h-4">
+              {Array.from({ length: 24 }).map((_, i) => {
+                const played = duration > 0 ? (i / 24) < (progress / duration) : false;
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      width: 3,
+                      height: `${30 + Math.sin(i * 0.8) * 60}%`,
+                      borderRadius: 2,
+                      background: played ? "#C9A84C" : "rgba(250,246,239,0.15)",
+                      transition: "background 0.1s",
+                    }}
+                  />
+                );
+              })}
+            </div>
           </div>
 
-          {/* Progress bar — vermillion → gold gradient */}
-          <div
-            className="w-full h-1 rounded-full overflow-hidden"
-            style={{ background: "rgba(201,168,76,0.1)" }}
-          >
-            <div
-              className="h-full rounded-full transition-[width] duration-100"
+          {/* Time */}
+          {duration > 0 && (
+            <span
+              className="text-[11px] font-sans shrink-0"
               style={{
-                width: `${progressPct}%`,
-                background: "linear-gradient(to right, var(--vermillion), var(--gold))",
+                color: "rgba(250,246,239,0.4)",
+                fontVariantNumeric: "tabular-nums",
+                fontFamily: "monospace",
               }}
-            />
-          </div>
+            >
+              {formatTime(progress)} / {formatTime(duration)}
+            </span>
+          )}
         </div>
       </div>
     </div>
