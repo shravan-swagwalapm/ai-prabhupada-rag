@@ -8,6 +8,8 @@ import AnswerTabs from "@/components/AnswerTabs";
 import QuotaBar from "@/components/QuotaBar";
 import SubscribeGate from "@/components/SubscribeGate";
 import ShareBar from "@/components/ShareBar";
+import LotusWatermark from "@/components/LotusWatermark";
+import WarmSkeleton from "@/components/WarmSkeleton";
 import { queryStream, type Passage } from "@/lib/api";
 
 export default function Home() {
@@ -129,30 +131,30 @@ export default function Home() {
       className="relative z-10 min-h-screen flex flex-col items-center px-4 py-8 sm:py-12"
       style={{ background: "var(--sanctum)" }}
     >
-      {/* Glass header */}
-      <div
-        className="w-full max-w-3xl mx-auto flex items-center justify-between mb-8 sm:mb-12 px-5 py-3 rounded-2xl"
+      {/* Frosted glass header */}
+      <header
+        className="w-full max-w-3xl mx-auto flex items-center justify-between mb-8 sm:mb-12 px-5 py-3"
         style={{
-          background: "var(--glass)",
-          border: "1px solid var(--glass-border)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
+          background: "rgba(250,246,239,0.85)",
+          borderBottom: "1px solid var(--glass-border-hover)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
         }}
       >
         {/* Logo / brand */}
         <div className="flex items-center gap-3">
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center"
+            className="w-[38px] h-[38px] flex items-center justify-center"
             style={{
-              background: "linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.08))",
-              border: "1px solid var(--glass-border-hover)",
+              background: "linear-gradient(135deg, #1A3A6B, #2A5298)",
+              borderRadius: 12,
             }}
           >
             <span className="text-base">🙏</span>
           </div>
           <span
-            className="text-lg font-serif tracking-wide"
-            style={{ color: "var(--text-primary)" }}
+            className="text-lg font-bold font-serif"
+            style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
           >
             AI Prabhupada
           </span>
@@ -168,18 +170,14 @@ export default function Home() {
           )}
           <a
             href="/history/"
-            className="p-2.5 rounded-xl transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="flex items-center justify-center transition-all"
             style={{
-              border: "1px solid transparent",
+              background: "rgba(255,255,255,0.65)",
+              border: "1px solid var(--glass-border-hover)",
+              borderRadius: 10,
+              minHeight: 44,
+              minWidth: 44,
               color: "var(--text-secondary)",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(201,168,76,0.06)";
-              (e.currentTarget as HTMLElement).style.borderColor = "var(--glass-border-hover)";
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "transparent";
-              (e.currentTarget as HTMLElement).style.borderColor = "transparent";
             }}
             aria-label="History"
             title="Your questions"
@@ -192,6 +190,7 @@ export default function Home() {
           <button
             onClick={logout}
             className="rounded-full cursor-pointer transition-opacity hover:opacity-80"
+            style={{ minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}
             aria-label="Sign out"
             title="Sign out"
           >
@@ -206,30 +205,38 @@ export default function Home() {
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center"
                 style={{
-                  background: "linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.08))",
+                  background: "linear-gradient(135deg, #1A3A6B, #2A5298)",
                   border: "2px solid var(--glass-border-hover)",
                 }}
               >
-                <span className="text-sm font-sans font-semibold" style={{ color: "var(--text-primary)" }}>
+                <span className="text-sm font-sans font-semibold" style={{ color: "#FAF6EF" }}>
                   {user?.name?.charAt(0)?.toUpperCase() || "?"}
                 </span>
               </div>
             )}
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Greeting */}
-      <div className="text-center mb-10">
+      <div className="relative text-center mb-10">
+        {/* Arati glow */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(201,168,76,0.08) 0%, transparent 70%)",
+          }}
+        />
+        <LotusWatermark />
         <h1
-          className="text-3xl sm:text-4xl font-serif font-semibold tracking-wide leading-tight"
-          style={{ color: "var(--text-primary)" }}
+          className="relative text-3xl sm:text-4xl font-serif font-bold leading-tight"
+          style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
         >
           Hare Krishna{user?.name ? `, ${user.name.split(" ")[0]}` : ""}.
         </h1>
         <p
-          className="mt-3 text-base font-sans max-w-md mx-auto"
-          style={{ color: "var(--text-secondary)" }}
+          className="relative mt-3 text-lg font-sans max-w-md mx-auto"
+          style={{ color: "var(--text-secondary)", fontWeight: 450, lineHeight: 1.75 }}
         >
           What would you like to ask Srila Prabhupada?
         </p>
@@ -243,24 +250,27 @@ export default function Home() {
         voiceQuotaExhausted={voiceExhausted}
       />
 
-      {/* Text / Voice mode toggle */}
+      {/* Text / Voice mode toggle — iOS segmented control */}
       <div className="mt-5 flex items-center justify-center">
         <div
-          className="flex gap-1 p-1.5 rounded-full"
+          className="flex gap-1"
           style={{
-            background: "var(--card)",
             border: "1px solid var(--glass-border)",
+            borderRadius: 14,
+            background: "#FAF6EF",
+            padding: "4px",
           }}
         >
           <button
             type="button"
             onClick={() => setVoiceEnabled(false)}
-            className="px-5 py-2 rounded-full text-sm font-sans font-semibold transition-all duration-200 min-h-[44px]"
+            className="px-5 py-2 text-sm font-sans font-semibold transition-all duration-200"
             style={{
-              background: !voiceEnabled ? "rgba(201,168,76,0.15)" : "transparent",
-              color: !voiceEnabled ? "var(--text-primary)" : "var(--text-muted)",
-              border: !voiceEnabled ? "1px solid var(--glass-border-hover)" : "1px solid transparent",
-              boxShadow: !voiceEnabled ? "0 2px 8px rgba(0,0,0,0.2)" : "none",
+              background: !voiceEnabled ? "#FFFFFF" : "transparent",
+              color: !voiceEnabled ? "var(--text-primary)" : "var(--text-secondary)",
+              boxShadow: !voiceEnabled ? "0 1px 4px rgba(26,58,107,0.08)" : "none",
+              borderRadius: 10,
+              minHeight: 44,
             }}
           >
             Text
@@ -274,12 +284,13 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setVoiceEnabled(true)}
-            className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-sans font-semibold transition-all duration-200 min-h-[44px]"
+            className="flex items-center gap-2 px-5 py-2 text-sm font-sans font-semibold transition-all duration-200"
             style={{
-              background: voiceEnabled ? "rgba(201,168,76,0.15)" : "transparent",
-              color: voiceEnabled ? "var(--text-primary)" : "var(--text-muted)",
-              border: voiceEnabled ? "1px solid var(--glass-border-hover)" : "1px solid transparent",
-              boxShadow: voiceEnabled ? "0 2px 8px rgba(0,0,0,0.2)" : "none",
+              background: voiceEnabled ? "#FFFFFF" : "transparent",
+              color: voiceEnabled ? "var(--text-primary)" : "var(--text-secondary)",
+              boxShadow: voiceEnabled ? "0 1px 4px rgba(26,58,107,0.08)" : "none",
+              borderRadius: 10,
+              minHeight: 44,
             }}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -308,6 +319,28 @@ export default function Home() {
           }}
         >
           {streamError}
+        </div>
+      )}
+
+      {/* Searching skeleton */}
+      {isSearching && (
+        <div className="w-full max-w-3xl mx-auto mt-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="relative w-4 h-4">
+              <span
+                className="absolute inset-0 rounded-full animate-ping"
+                style={{ background: "rgba(26,58,107,0.2)" }}
+              />
+              <span
+                className="relative block w-4 h-4 rounded-full"
+                style={{ background: "rgba(26,58,107,0.4)" }}
+              />
+            </div>
+            <span className="text-sm font-sans" style={{ color: "var(--text-secondary)" }}>
+              Searching 14 sacred texts...
+            </span>
+          </div>
+          <WarmSkeleton />
         </div>
       )}
 
@@ -349,8 +382,8 @@ export default function Home() {
 
       {/* Footer */}
       <footer
-        className="mt-auto pt-16 pb-6 text-center text-xs font-sans tracking-wide"
-        style={{ color: "var(--text-ghost)" }}
+        className="mt-auto pt-16 pb-6 text-center font-sans"
+        style={{ color: "var(--text-ghost)", fontSize: "11px", letterSpacing: "0.04em" }}
       >
         Powered by FAISS + Claude Sonnet 4.5 + ElevenLabs
       </footer>
