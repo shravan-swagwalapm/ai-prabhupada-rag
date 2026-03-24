@@ -3,49 +3,53 @@
 @tailwind utilities;
 
 :root {
-  /* Backgrounds — The Sanctum */
-  --sanctum: #060403;
-  --temple-dark: #0c0908;
-  --altar: #161009;
-  --card: #1c150e;
-  --card-hover: #231a12;
+  /* Backgrounds — Devotional Light */
+  --sanctum: #FAF6EF;
+  --temple-dark: #F5EDE0;
+  --altar: #FFFFFF;
+  --card: #FFFFFF;
+  --card-hover: #FBF7F0;
+  --bg-card-gradient: linear-gradient(135deg, #FFFFFF, #FBF7F0);
 
   /* Sacred Accents — Arati Flame */
-  --gold: #c9a84c;
+  --gold: #C9A84C;
   --gold-bright: #dbb85a;
-  --gold-dim: #a08940;
-  --vermillion: #c24d2c;
+  --gold-dim: #8B7332;
+  --vermillion: #C24D2C;
   --vermillion-bright: #e07050;
   --tulsi: #4a8c3f;
+  --sanskrit-red: #c75b39;
 
-  /* Text — Deity Darshan Glow */
-  --text-primary: #f7f0e3;
-  --text-body: rgba(247,240,227,0.88);
-  --text-secondary: rgba(247,240,227,0.6);
-  --text-muted: rgba(247,240,227,0.4);
-  --text-ghost: rgba(247,240,227,0.25);
+  /* Text — Solid hex for light backgrounds */
+  --text-primary: #1A3A6B;
+  --text-body: #2C4A78;
+  --text-secondary: #4A6A94;
+  --text-muted: #7A93B0;
+  --text-ghost: #A0B4C8;
 
-  /* Glass & Borders */
-  --glass: rgba(22,16,9,0.6);
-  --glass-border: rgba(201,168,76,0.08);
-  --glass-border-hover: rgba(201,168,76,0.15);
+  /* Accent tokens */
+  --krishna-blue: #1A3A6B;
+  --krishna-blue-light: #2A5298;
+
+  /* Glass & Borders — Warm-tinted */
+  --glass: rgba(250,246,239,0.85);
+  --glass-border: #D4C9B8;
+  --glass-border-hover: #C4B89C;
+
+  /* Shadows — Stripe-style layered */
+  --shadow-card: 0 1px 3px rgba(26,58,107,0.04), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-strong: 0 2px 8px rgba(26,58,107,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-search: 0 4px 20px rgba(26,58,107,0.06), 0 1px 4px rgba(0,0,0,0.03);
+
+  /* Borders */
+  --border-default: 1px solid #D4C9B8;
+  --border-strong: 1px solid #C4B89C;
 }
 
 body {
-  background: var(--sanctum);
+  background: linear-gradient(180deg, #FAF6EF 0%, #F5EDE0 40%, #FAF6EF 100%);
   color: var(--text-body);
-  font-family: 'Cormorant Garamond', Georgia, Cambria, "Times New Roman", serif;
-}
-
-/* Noise texture overlay */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Streaming text cursor */
@@ -65,10 +69,10 @@ body::before {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--temple-dark);
+  background: #F5EDE0;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--gold-dim);
+  background: #C4B89C;
   border-radius: 3px;
 }
 
@@ -78,7 +82,7 @@ body::before {
 }
 .passage-card:hover {
   border-color: var(--glass-border-hover);
-  background-color: rgba(201, 168, 76, 0.04);
+  background-color: rgba(26,58,107,0.02);
 }
 
 /* Rich Answer — verse blocks */
@@ -91,9 +95,9 @@ body::before {
   top: 0;
   left: 0;
   bottom: 0;
-  width: 2px;
+  width: 3px;
   border-radius: 1px;
-  background: linear-gradient(to bottom, rgba(201, 168, 76, 0.5), rgba(201, 168, 76, 0.15));
+  background: var(--gold);
 }
 
 /* Rich Answer — mantra glow */
@@ -155,15 +159,16 @@ body::before {
 /* Glassmorphism for modals */
 .glass-card {
   background: var(--glass);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 var(--glass-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-strong);
+  border: 1px solid var(--glass-border);
 }
 
 /* Smooth focus ring for inputs */
 input:focus,
 textarea:focus {
-  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.08);
+  box-shadow: 0 0 0 3px rgba(26,58,107,0.08);
 }
 
 /* Tab transitions */
@@ -185,4 +190,17 @@ textarea:focus {
 .graph-node-scripture:hover {
   filter: drop-shadow(0 0 6px rgba(201, 168, 76, 0.3));
   transform: scale(1.04);
+}
+
+/* Warm skeleton shimmer */
+@keyframes warm-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.warm-skeleton {
+  background: linear-gradient(90deg, #EDE6D8 25%, #F5F0E6 50%, #EDE6D8 75%);
+  background-size: 200% 100%;
+  animation: warm-shimmer 1.8s ease-in-out infinite;
+  border-radius: 6px;
 }
