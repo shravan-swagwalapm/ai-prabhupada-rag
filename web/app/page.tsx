@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import QuestionInput from "@/components/QuestionInput";
 import AnswerTabs from "@/components/AnswerTabs";
-import QuotaBar from "@/components/QuotaBar";
 import FontSizeToggle from "@/components/FontSizeToggle";
 import SubscribeGate from "@/components/SubscribeGate";
 import ShareBar from "@/components/ShareBar";
@@ -162,14 +161,8 @@ export default function Home() {
           </span>
         </div>
 
-        {/* Right side: quota + history + avatar */}
+        {/* Right side: font size + history + avatar */}
         <div className="flex items-center gap-2">
-          {user && (
-            <QuotaBar
-              textQuota={user.text_quota}
-              voiceQuota={user.voice_quota}
-            />
-          )}
           <FontSizeToggle />
           <a
             href="/history/"
@@ -246,71 +239,71 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Search input */}
+      {/* Search input with Text/Voice toggle injected between input and FAQ cards */}
       <QuestionInput
         onSubmit={handleSubmit}
         isLoading={isLoading}
         disabled={currentModeExhausted}
         voiceQuotaExhausted={voiceExhausted}
-      />
-
-      {/* Text / Voice mode toggle — iOS segmented control */}
-      <div className="mt-5 flex items-center justify-center">
-        <div
-          className="flex gap-1"
-          style={{
-            border: "1px solid var(--glass-border)",
-            borderRadius: 14,
-            background: "#FAF6EF",
-            padding: "4px",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setVoiceEnabled(false)}
-            className="px-5 py-2 text-sm font-sans font-semibold transition-all duration-200"
+      >
+        {/* Text / Voice mode toggle — iOS segmented control */}
+        <div className="mt-5 flex items-center justify-center">
+          <div
+            className="flex gap-1"
             style={{
-              background: !voiceEnabled ? "#FFFFFF" : "transparent",
-              color: !voiceEnabled ? "var(--text-primary)" : "var(--text-secondary)",
-              boxShadow: !voiceEnabled ? "0 1px 4px rgba(26,58,107,0.08)" : "none",
-              borderRadius: 10,
-              minHeight: 44,
+              border: "1px solid var(--glass-border)",
+              borderRadius: 14,
+              background: "#FAF6EF",
+              padding: "4px",
             }}
           >
-            Text
-            <span
-              className="ml-2 text-xs"
-              style={{ color: !voiceEnabled ? "var(--text-secondary)" : "var(--text-ghost)" }}
+            <button
+              type="button"
+              onClick={() => setVoiceEnabled(false)}
+              className="px-5 py-2 text-sm font-sans font-semibold transition-all duration-200"
+              style={{
+                background: !voiceEnabled ? "#FFFFFF" : "transparent",
+                color: !voiceEnabled ? "var(--text-primary)" : "var(--text-secondary)",
+                boxShadow: !voiceEnabled ? "0 1px 4px rgba(26,58,107,0.08)" : "none",
+                borderRadius: 10,
+                minHeight: 44,
+              }}
             >
-              {user?.text_quota ?? 0}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setVoiceEnabled(true)}
-            className="flex items-center gap-2 px-5 py-2 text-sm font-sans font-semibold transition-all duration-200"
-            style={{
-              background: voiceEnabled ? "#FFFFFF" : "transparent",
-              color: voiceEnabled ? "var(--text-primary)" : "var(--text-secondary)",
-              boxShadow: voiceEnabled ? "0 1px 4px rgba(26,58,107,0.08)" : "none",
-              borderRadius: 10,
-              minHeight: 44,
-            }}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M12 15a3 3 0 003-3V5a3 3 0 00-6 0v7a3 3 0 003 3z" />
-            </svg>
-            Voice
-            <span
-              className="text-xs"
-              style={{ color: voiceEnabled ? "var(--text-secondary)" : "var(--text-ghost)" }}
+              Text
+              <span
+                className="ml-2 text-xs"
+                style={{ color: !voiceEnabled ? "var(--text-secondary)" : "var(--text-ghost)" }}
+              >
+                {user?.text_quota ?? 0}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setVoiceEnabled(true)}
+              className="flex items-center gap-2 px-5 py-2 text-sm font-sans font-semibold transition-all duration-200"
+              style={{
+                background: voiceEnabled ? "#FFFFFF" : "transparent",
+                color: voiceEnabled ? "var(--text-primary)" : "var(--text-secondary)",
+                boxShadow: voiceEnabled ? "0 1px 4px rgba(26,58,107,0.08)" : "none",
+                borderRadius: 10,
+                minHeight: 44,
+              }}
             >
-              {user?.voice_quota ?? 0}
-            </span>
-          </button>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4M12 15a3 3 0 003-3V5a3 3 0 00-6 0v7a3 3 0 003 3z" />
+              </svg>
+              Voice
+              <span
+                className="text-xs"
+                style={{ color: voiceEnabled ? "var(--text-secondary)" : "var(--text-ghost)" }}
+              >
+                {user?.voice_quota ?? 0}
+              </span>
+            </button>
+          </div>
         </div>
-      </div>
+      </QuestionInput>
 
       {/* Error banner */}
       {streamError && (
