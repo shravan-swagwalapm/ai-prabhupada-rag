@@ -18,14 +18,14 @@ export default function AudioPlayer({ audioId }: Props) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollStartRef = useRef<number>(0);
   const animFrameRef = useRef<number>(0);
 
   const stopPolling = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
   };
 
@@ -42,7 +42,7 @@ export default function AudioPlayer({ audioId }: Props) {
     let currentInterval = POLL_INITIAL_INTERVAL_MS;
 
     const schedulePoll = () => {
-      intervalRef.current = setTimeout(async () => {
+      timeoutRef.current = setTimeout(async () => {
         if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
           setState("error");
           return;
@@ -63,7 +63,7 @@ export default function AudioPlayer({ audioId }: Props) {
           currentInterval = Math.min(currentInterval * 2, POLL_MAX_INTERVAL_MS);
           schedulePoll();
         }
-      }, currentInterval) as unknown as ReturnType<typeof setInterval>;
+      }, currentInterval);
     };
 
     // First poll immediately

@@ -20,16 +20,24 @@ export default function ShareBar({ answerText, question }: ShareBarProps) {
   const formatted = formatForShare(question, answerText);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(formatted);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(formatted);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable (non-HTTPS or unfocused document)
+    }
   };
 
   const handleShare = async () => {
-    if (navigator.share) {
-      await navigator.share({ title: 'Prabhupada AI', text: formatted });
-    } else {
-      handleCopy();
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Prabhupada AI', text: formatted });
+      } else {
+        await handleCopy();
+      }
+    } catch {
+      // User cancelled share dialog or permission denied
     }
   };
 

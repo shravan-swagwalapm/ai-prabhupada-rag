@@ -2,19 +2,12 @@
 
 import { useState, useEffect } from "react";
 import type { Passage } from "@/lib/api";
-import { getScriptureName, getScriptureShort, getScriptureIcon } from "@/lib/scriptures";
-import { getScriptureSVGColor } from "@/lib/scriptures";
+import { getScriptureName, getScriptureShort, getScriptureIcon, getScriptureSVGColor, getRelevanceColor } from "@/lib/scriptures";
 
 interface SourceDrawerProps {
   passages: Passage[];
   isOpen: boolean;
   onClose: () => void;
-}
-
-function getRelevanceColor(pct: number): string {
-  if (pct >= 70) return "var(--tulsi)";
-  if (pct >= 50) return "var(--gold)";
-  return "var(--text-muted)";
 }
 
 export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawerProps) {
@@ -24,6 +17,16 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
   useEffect(() => {
     if (!isOpen) setExpandedIndex(null);
   }, [isOpen]);
+
+  // Escape key to close
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   const toggleAccordion = (idx: number) => {
     setExpandedIndex(expandedIndex === idx ? null : idx);
@@ -42,11 +45,16 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? "auto" : "none",
         }}
+        aria-hidden={!isOpen}
         onClick={onClose}
       />
 
       {/* Drawer */}
       <div
+        role="dialog"
+        aria-modal={isOpen}
+        aria-label="All sources"
+        aria-hidden={!isOpen}
         className="fixed right-0 top-0 bottom-0 z-[101] overflow-y-auto transition-transform duration-300 ease-out"
         style={{
           width: "min(420px, 88vw)",

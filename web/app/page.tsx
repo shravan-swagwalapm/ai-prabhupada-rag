@@ -309,14 +309,22 @@ export default function Home() {
       {/* Error banner */}
       {streamError && (
         <div
-          className="w-full max-w-3xl mx-auto mt-4 px-4 py-3 rounded-lg text-sm font-sans"
+          className="w-full max-w-3xl mx-auto mt-4 px-4 py-3 rounded-lg text-sm font-sans flex items-center justify-between gap-3"
           style={{
             background: "rgba(194,77,44,0.1)",
             border: "1px solid rgba(194,77,44,0.3)",
             color: "var(--text-body)",
           }}
         >
-          {streamError}
+          <span>{streamError}</span>
+          <button
+            onClick={() => setStreamError(null)}
+            className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full transition-colors"
+            style={{ color: "var(--text-muted)" }}
+            aria-label="Dismiss error"
+          >
+            ✕
+          </button>
         </div>
       )}
 

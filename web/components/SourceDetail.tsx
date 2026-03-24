@@ -1,17 +1,11 @@
 "use client";
 
 import type { Passage } from "@/lib/api";
-import { getScriptureName, getScriptureIcon } from "@/lib/scriptures";
+import { getScriptureName, getScriptureIcon, getRelevanceColor } from "@/lib/scriptures";
 
 interface SourceDetailProps {
   passage: Passage | null;
   onClose: () => void;
-}
-
-function getRelevanceColor(pct: number): string {
-  if (pct >= 70) return "var(--tulsi)";
-  if (pct >= 50) return "var(--gold)";
-  return "var(--text-muted)";
 }
 
 export default function SourceDetail({ passage, onClose }: SourceDetailProps) {

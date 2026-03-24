@@ -102,20 +102,13 @@ export function getScriptureIcon(code: string): string {
 }
 
 /**
- * Get a color class for scripture badges (for visual differentiation).
+ * Get relevance color based on match percentage.
+ * Used by SourceDetail and SourceDrawer.
  */
-export function getScriptureColor(code: string): string {
-  const colors: Record<string, string> = {
-    bg: "text-amber-300 bg-amber-500/10 border-amber-500/20",
-    sb: "text-orange-300 bg-orange-500/10 border-orange-500/20",
-    cc: "text-rose-300 bg-rose-500/10 border-rose-500/20",
-    nod: "text-pink-300 bg-pink-500/10 border-pink-500/20",
-    noi: "text-fuchsia-300 bg-fuchsia-500/10 border-fuchsia-500/20",
-    iso: "text-violet-300 bg-violet-500/10 border-violet-500/20",
-    kb: "text-emerald-300 bg-emerald-500/10 border-emerald-500/20",
-    letters: "text-sky-300 bg-sky-500/10 border-sky-500/20",
-  };
-  return colors[code.toLowerCase()] || "text-saffron-300 bg-saffron-500/10 border-saffron-500/20";
+export function getRelevanceColor(pct: number): string {
+  if (pct >= 70) return "var(--tulsi)";
+  if (pct >= 50) return "var(--gold)";
+  return "var(--text-muted)";
 }
 
 /**

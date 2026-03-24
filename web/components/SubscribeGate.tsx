@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { submitWaitlist } from '@/lib/api';
 import AratiDivider from './AratiDivider';
 
@@ -16,6 +16,18 @@ export default function SubscribeGate({ quotaType, userEmail, textUsed, voiceUse
   const [email, setEmail] = useState(userEmail);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Escape key to dismiss + focus trap
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onDismiss();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    // Focus the dialog on mount
+    dialogRef.current?.focus();
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onDismiss]);
 
   const handleSubmit = async () => {
     if (!email || !email.includes('@')) {
@@ -32,8 +44,17 @@ export default function SubscribeGate({ quotaType, userEmail, textUsed, voiceUse
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(6,4,3,0.85)' }}>
-      <div className="max-w-md w-full rounded-2xl p-8 text-center" style={{ background: 'var(--card)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(6,4,3,0.85)' }} onClick={onDismiss}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Quota exhausted"
+        tabIndex={-1}
+        className="max-w-md w-full rounded-2xl p-8 text-center outline-none"
+        style={{ background: 'var(--card)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <AratiDivider />
         <h2 className="font-serif text-2xl font-semibold mt-4" style={{ color: 'var(--text-primary)' }}>
           You've tasted the nectar
