@@ -445,8 +445,8 @@ export default function AuthPage() {
             <div
               className="inline-flex items-center gap-3 px-4 py-3 rounded-xl"
               style={{
-                border: "1px solid rgba(250,246,239,0.1)",
-                background: "rgba(250,246,239,0.05)",
+                border: "1px solid var(--glass-border)",
+                background: "var(--glass)",
               }}
             >
               <div

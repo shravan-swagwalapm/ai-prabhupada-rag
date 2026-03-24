@@ -66,7 +66,8 @@ export default function HistoryPage() {
         <div className="flex items-center gap-4 mb-8">
           <button
             onClick={() => router.push("/")}
-            className="p-2 rounded-lg transition-colors"
+            className="p-2 rounded-lg transition-colors flex items-center justify-center"
+            style={{ minHeight: 44, minWidth: 44 }}
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(26,58,107,0.06)")}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
             aria-label="Back"
@@ -98,7 +99,7 @@ export default function HistoryPage() {
             <button
               onClick={() => router.push("/")}
               className="mt-4 px-6 py-2 rounded-full text-white font-sans text-sm transition-colors"
-              style={{ backgroundColor: "#1A3A6B" }}
+              style={{ backgroundColor: "#1A3A6B", minHeight: 44 }}
               onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2A5298")}
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1A3A6B")}
             >

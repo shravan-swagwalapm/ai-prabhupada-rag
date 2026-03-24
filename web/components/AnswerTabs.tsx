@@ -60,6 +60,7 @@ export default function AnswerTabs({
             color: activeTab === "answer" ? "var(--text-primary)" : "var(--text-muted)",
             background: "transparent",
             border: "none",
+            minHeight: 44,
           }}
         >
           Answer
@@ -79,6 +80,7 @@ export default function AnswerTabs({
             color: activeTab === "sources" ? "var(--text-primary)" : "var(--text-muted)",
             background: "transparent",
             border: "none",
+            minHeight: 44,
           }}
         >
           Sources{passages.length > 0 ? ` (${passages.length})` : ""}
