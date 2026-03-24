@@ -73,7 +73,7 @@ export default function AuthPage() {
   return (
     <main className="relative z-10" style={{ background: "var(--sanctum)" }}>
       {/* ── Section 1: Hero ────────────────────────────────────────── */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-4 py-12 relative">
+      <section className="min-h-screen flex flex-col items-center justify-center px-4 py-6 sm:py-12 relative">
         {/* Background glow */}
         <div
           className="absolute inset-0 pointer-events-none"
@@ -84,11 +84,11 @@ export default function AuthPage() {
         />
 
         {/* Pulsing rings */}
-        <div className="relative flex items-center justify-center mb-8">
+        <div className="relative flex items-center justify-center mb-4 sm:mb-8">
           <div
             className="absolute rounded-full"
             style={{
-              width: 120, height: 120,
+              width: 90, height: 90,
               border: "1px solid rgba(26,58,107,0.08)",
               animation: "pulse-ring 3s ease-in-out infinite",
               animationDelay: "0.6s",
@@ -97,7 +97,7 @@ export default function AuthPage() {
           <div
             className="absolute rounded-full"
             style={{
-              width: 88, height: 88,
+              width: 66, height: 66,
               border: "1px solid rgba(26,58,107,0.12)",
               animation: "pulse-ring 3s ease-in-out infinite",
               animationDelay: "0.3s",
@@ -106,7 +106,7 @@ export default function AuthPage() {
           <div
             className="absolute rounded-full"
             style={{
-              width: 60, height: 60,
+              width: 44, height: 44,
               border: "1px solid rgba(26,58,107,0.2)",
               animation: "pulse-ring 3s ease-in-out infinite",
             }}
@@ -148,7 +148,7 @@ export default function AuthPage() {
         </p>
 
         {/* Hero CTA */}
-        <div className="mt-8 flex flex-col items-center gap-3">
+        <div className="mt-5 sm:mt-8 flex flex-col items-center gap-3">
           <div id="google-signin-btn-hero" />
 
           {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
@@ -182,9 +182,9 @@ export default function AuthPage() {
           </p>
         </div>
 
-        {/* Scroll hint */}
+        {/* Scroll hint — hidden on small screens to avoid overlap */}
         <div
-          className="absolute bottom-8 flex flex-col items-center gap-2"
+          className="absolute bottom-8 hidden sm:flex flex-col items-center gap-2"
           style={{ animation: "bounce-hint 2s ease-in-out infinite" }}
         >
           <p className="text-xs tracking-wider" style={{ color: "var(--text-ghost)" }}>
