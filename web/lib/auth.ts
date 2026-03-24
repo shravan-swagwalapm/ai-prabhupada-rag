@@ -159,5 +159,6 @@ export function logout(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
-  window.location.href = "/auth/";
+  // Replace (not push) so back button doesn't return to authed page
+  window.location.replace("/auth/");
 }

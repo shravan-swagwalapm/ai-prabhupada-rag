@@ -75,7 +75,7 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
         <p className="text-sm font-serif" style={{ color: "var(--gold)", letterSpacing: "0.06em" }}>
           All Sources
         </p>
-        <p className="text-[11px] font-sans mb-5" style={{ color: "var(--text-muted)" }}>
+        <p className="text-xs font-sans mb-5" style={{ color: "var(--text-muted)" }}>
           {passages.length} passages from {uniqueScriptures} scripture{uniqueScriptures !== 1 ? "s" : ""}
         </p>
 
@@ -103,6 +103,7 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
                 <button
                   onClick={() => toggleAccordion(i)}
                   className="w-full text-left px-4 py-3.5 flex items-center justify-between"
+                  style={{ minHeight: 52 }}
                   aria-expanded={isExpanded}
                   aria-controls={`drawer-passage-${i}`}
                 >
@@ -110,7 +111,7 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
                     <span className="text-base shrink-0">{icon}</span>
                     <div className="min-w-0">
                       <span
-                        className="inline-block px-2 py-0.5 rounded-md text-[11px] font-sans font-medium"
+                        className="inline-block px-2.5 py-1 rounded-md text-xs font-sans font-medium"
                         style={{
                           color: svgColor.text,
                           background: svgColor.fill,
@@ -120,18 +121,18 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
                         {shortName}
                       </span>
                       {fullName !== shortName && (
-                        <p className="text-[10px] font-sans mt-1 truncate" style={{ color: "var(--text-muted)" }}>
+                        <p className="text-xs font-sans mt-1 truncate" style={{ color: "var(--text-muted)" }}>
                           {fullName.substring(fullName.indexOf(",") + 2)}
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[11px] font-sans font-semibold" style={{ color: "var(--gold-dim)" }}>
+                    <span className="text-xs font-sans font-semibold" style={{ color: "var(--gold-dim)" }}>
                       {matchPct.toFixed(0)}%
                     </span>
                     <span
-                      className="text-[10px] transition-transform duration-200"
+                      className="text-xs transition-transform duration-200"
                       style={{
                         color: "var(--text-muted)",
                         transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
@@ -160,13 +161,13 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
                           }}
                         />
                       </div>
-                      <span className="text-[10px] font-sans font-semibold" style={{ color: relevanceColor }}>
+                      <span className="text-xs font-sans font-semibold" style={{ color: relevanceColor }}>
                         {matchPct.toFixed(0)}% relevance
                       </span>
                     </div>
 
                     {/* Full passage text */}
-                    <p className="font-serif text-[13px]" style={{ lineHeight: "1.8", color: "var(--text-body)" }}>
+                    <p className="font-serif" style={{ fontSize: 16, lineHeight: "1.75", color: "var(--text-body)" }}>
                       {p.text}
                     </p>
                   </div>

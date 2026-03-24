@@ -47,7 +47,7 @@ export default function SourceDetail({ passage, onClose }: SourceDetailProps) {
                 {fullName.split(",")[0]}
               </p>
               {fullName.includes(",") && (
-                <p className="text-[11px] font-sans truncate" style={{ color: "var(--text-muted)" }}>
+                <p className="text-xs font-sans truncate" style={{ color: "var(--text-muted)" }}>
                   {fullName.substring(fullName.indexOf(",") + 2)}
                 </p>
               )}
@@ -76,14 +76,14 @@ export default function SourceDetail({ passage, onClose }: SourceDetailProps) {
               }}
             />
           </div>
-          <span className="text-[11px] font-sans font-semibold" style={{ color: relevanceColor }}>
+          <span className="text-xs font-sans font-semibold" style={{ color: relevanceColor }}>
             {matchPct.toFixed(0)}%
           </span>
         </div>
 
         {/* Full passage text — no truncation */}
         <div className="px-5 pb-6">
-          <p className="font-serif text-sm" style={{ lineHeight: "1.85", color: "var(--text-body)" }}>
+          <p className="font-serif" style={{ fontSize: 16, lineHeight: "1.75", color: "var(--text-body)" }}>
             {passage.text}
           </p>
         </div>

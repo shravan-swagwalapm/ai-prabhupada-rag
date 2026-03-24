@@ -807,7 +807,13 @@ async def audio_status(audio_id: str):
         raise HTTPException(status_code=400, detail="Invalid audio ID format")
 
     status = _get_audio_job(audio_id)
+
+    # Fallback: check disk if not in memory registry (survives container restarts)
     if status is None:
+        audio_path = AUDIO_CACHE_DIR / f"{audio_id}.mp3"
+        if audio_path.exists():
+            _store_audio_job(audio_id, "ready")  # Repopulate registry
+            return {"audio_id": audio_id, "status": "ready"}
         raise HTTPException(status_code=404, detail="Audio ID not found")
 
     return {"audio_id": audio_id, "status": status}

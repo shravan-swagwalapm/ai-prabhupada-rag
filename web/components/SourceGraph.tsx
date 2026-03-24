@@ -29,9 +29,9 @@ interface GraphNode extends SimulationNodeDatum {
   passageIndex?: number;
 }
 
-const CARD_W = 100;
-const CARD_H = 58;
-const COMPACT_SCALE = 0.8;
+const CARD_W = 120;
+const CARD_H = 68;
+const COMPACT_SCALE = 0.85;
 
 export default function SourceGraph({
   passages,
@@ -42,8 +42,8 @@ export default function SourceGraph({
   compact = false,
   instanceId = "main",
 }: SourceGraphProps) {
-  const viewW = compact ? 320 : 400;
-  const viewH = compact ? 240 : 300;
+  const viewW = compact ? 380 : 460;
+  const viewH = compact ? 280 : 350;
   const scale = compact ? COMPACT_SCALE : 1;
   const cardW = CARD_W * scale;
   const cardH = CARD_H * scale;
@@ -92,9 +92,9 @@ export default function SourceGraph({
 
   const cx = viewW / 2;
   const cy = viewH / 2;
-  const fontSize = compact ? 8 : 10;
-  const subFontSize = compact ? 6.5 : 8;
-  const pctFontSize = compact ? 7.5 : 9;
+  const fontSize = compact ? 13 : 15;
+  const subFontSize = compact ? 10 : 11;
+  const pctFontSize = compact ? 11 : 12;
 
   return (
     <div className="w-full">
@@ -102,7 +102,7 @@ export default function SourceGraph({
         viewBox={`0 0 ${viewW} ${viewH}`}
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-auto"
-        style={{ maxWidth: compact ? 320 : 420 }}
+        style={{ maxWidth: compact ? 380 : 460 }}
       >
         <defs>
           <radialGradient id={`sgGlow-${instanceId}`}>
@@ -191,7 +191,7 @@ export default function SourceGraph({
                 x={pos.x}
                 y={pos.y + 2}
                 textAnchor="middle"
-                fill="rgba(255,255,255,0.35)"
+                fill="rgba(255,255,255,0.75)"
                 fontSize={subFontSize}
                 fontFamily="Georgia, serif"
               >
@@ -201,7 +201,7 @@ export default function SourceGraph({
                 x={pos.x}
                 y={pos.y + cardH / 3}
                 textAnchor="middle"
-                fill="rgba(201,168,76,0.7)"
+                fill="rgba(201,168,76,0.95)"
                 fontSize={pctFontSize}
                 fontFamily="-apple-system, sans-serif"
                 fontWeight="600"
@@ -227,8 +227,8 @@ export default function SourceGraph({
             x={cx}
             y={cy + (compact ? 20 : 25)}
             textAnchor="middle"
-            fill="rgba(201,168,76,0.4)"
-            fontSize={compact ? 6 : 7}
+            fill="rgba(201,168,76,0.7)"
+            fontSize={compact ? 10 : 11}
             fontFamily="-apple-system, sans-serif"
           >
             view all
