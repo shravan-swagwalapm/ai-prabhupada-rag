@@ -73,7 +73,7 @@ export default function AuthPage() {
   return (
     <main className="relative z-10" style={{ background: "var(--sanctum)" }}>
       {/* ── Section 1: Hero ────────────────────────────────────────── */}
-      <section className="min-h-screen flex flex-col items-center justify-center px-4 py-6 sm:py-12 relative">
+      <section className="min-h-screen flex flex-col items-center justify-center px-4 py-6 sm:py-12 sm:pb-28 relative">
         {/* Background glow */}
         <div
           className="absolute inset-0 pointer-events-none"
