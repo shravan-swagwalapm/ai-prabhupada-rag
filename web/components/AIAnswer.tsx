@@ -14,10 +14,11 @@ export default function AIAnswer({ answer, isStreaming, mode = "text" }: Props) 
   return (
     <div className="w-full max-w-3xl mx-auto">
       <div
-        className="p-6 sm:p-8 rounded-2xl shadow-lg shadow-black/20"
+        className="p-6 sm:p-8 rounded-2xl"
         style={{
           border: "1px solid var(--glass-border)",
           background: "var(--card)",
+          boxShadow: "var(--shadow-strong)",
         }}
       >
         {!answer && isStreaming ? (

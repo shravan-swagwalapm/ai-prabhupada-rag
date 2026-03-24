@@ -14,9 +14,9 @@ export default function WarmSkeleton({ lines = 4, showVerse = true }: Props) {
       <div
         className="rounded-xl p-6"
         style={{
-          border: "1px solid #C4B89C",
+          border: "1px solid var(--glass-border)",
           background: "var(--bg-card-gradient)",
-          boxShadow: "0 2px 8px rgba(26,58,107,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+          boxShadow: "var(--shadow-strong)",
         }}
       >
         <div className="space-y-3">

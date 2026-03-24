@@ -84,7 +84,7 @@ export default function AuthPage() {
         />
 
         {/* Walking Prabhupada — Gemini illustration */}
-        <div className="relative flex items-center justify-center mb-2 sm:mb-6">
+        <div className="relative flex items-center justify-center mb-4 sm:mb-6">
           {/* Golden aura behind the figure */}
           <div
             className="absolute prabhupada-aura rounded-full"
@@ -243,7 +243,7 @@ export default function AuthPage() {
                 background: "var(--glass)",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#C4B89C";
+                e.currentTarget.style.borderColor = "var(--glass-border-hover)";
                 e.currentTarget.style.background = "rgba(255,255,255,0.8)";
               }}
               onMouseLeave={(e) => {
@@ -301,7 +301,7 @@ export default function AuthPage() {
                 background: "var(--glass)",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#C4B89C";
+                e.currentTarget.style.borderColor = "var(--glass-border-hover)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = "var(--glass-border)";
@@ -364,17 +364,17 @@ export default function AuthPage() {
               className="rounded-xl transition-all duration-200"
               style={{
                 background: "var(--bg-card-gradient)",
-                border: "1px solid #D4C9B8",
+                border: "1px solid var(--glass-border)",
                 borderLeft: "3.5px solid var(--vermillion)",
                 borderRadius: 14,
                 padding: "18px 20px",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#C4B89C";
+                e.currentTarget.style.borderColor = "var(--glass-border-hover)";
                 e.currentTarget.style.borderLeftColor = "var(--vermillion-bright)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#D4C9B8";
+                e.currentTarget.style.borderColor = "var(--glass-border)";
                 e.currentTarget.style.borderLeftColor = "var(--vermillion)";
               }}
             >
@@ -477,14 +477,14 @@ export default function AuthPage() {
             className="rounded-2xl p-8 text-center"
             style={{
               border: "1px solid rgba(26,58,107,0.2)",
-              background: "linear-gradient(135deg, #1A3A6B, #15305A)",
+              background: "linear-gradient(135deg, var(--krishna-blue), var(--krishna-blue-dark))",
               borderRadius: 16,
               boxShadow: "0 4px 24px rgba(26,58,107,0.2)",
             }}
           >
             <h3
               className="font-serif font-bold text-2xl mb-1"
-              style={{ color: "#FAF6EF", letterSpacing: "-0.02em" }}
+              style={{ color: "var(--sanctum)", letterSpacing: "-0.02em" }}
             >
               Prabhupada AI
             </h3>
@@ -545,10 +545,10 @@ export default function AuthPage() {
       </section>
 
       {/* ── Footer ─────────────────────────────────────────────────── */}
-      <footer className="px-4 py-8 text-center">
+      <footer className="px-4 pt-16 pb-6 text-center">
         <p
-          className="text-xs tracking-wider"
-          style={{ color: "var(--text-ghost)" }}
+          className="font-sans"
+          style={{ color: "var(--text-muted)", fontSize: "13px", letterSpacing: "0.04em" }}
         >
           Powered by 161,724 passages from Srila Prabhupada&apos;s complete works
         </p>

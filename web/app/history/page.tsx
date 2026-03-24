@@ -99,9 +99,9 @@ export default function HistoryPage() {
             <button
               onClick={() => router.push("/")}
               className="mt-4 px-6 py-2 rounded-full text-white font-sans text-sm transition-colors"
-              style={{ backgroundColor: "#1A3A6B", minHeight: 44 }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2A5298")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1A3A6B")}
+              style={{ backgroundColor: "var(--krishna-blue)", minHeight: 44 }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--krishna-blue-light)")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--krishna-blue)")}
             >
               Ask your first question
             </button>
@@ -122,10 +122,10 @@ export default function HistoryPage() {
                   key={entry.id}
                   className="overflow-hidden"
                   style={{
-                    border: "1px solid #D4C9B8",
+                    border: "1px solid var(--glass-border)",
                     background: "var(--bg-card-gradient)",
                     borderRadius: 14,
-                    boxShadow: "0 1px 3px rgba(26,58,107,0.04), 0 1px 2px rgba(0,0,0,0.03)",
+                    boxShadow: "var(--shadow-card)",
                   }}
                 >
                   <button
@@ -156,7 +156,7 @@ export default function HistoryPage() {
                   </button>
 
                   {isExpanded && (
-                    <div className="px-4 pb-5" style={{ borderTop: "1px solid #D4C9B8" }}>
+                    <div className="px-4 pb-5" style={{ borderTop: "1px solid var(--glass-border)" }}>
                       <div className="pt-4">
                         <RichAnswer
                           text={entry.answer_text}

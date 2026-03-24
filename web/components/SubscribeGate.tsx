@@ -81,13 +81,21 @@ export default function SubscribeGate({ quotaType, userEmail, textUsed, voiceUse
             {error && <p className="text-xs" style={{ color: '#e07050' }}>{error}</p>}
             <button onClick={handleSubmit}
                     className="w-full py-3 rounded-lg font-display text-sm tracking-wider transition-colors"
-                    style={{ background: 'var(--gold)', color: 'var(--sanctum)' }}>
+                    style={{ background: 'var(--gold)', color: 'var(--sanctum)', minHeight: 44 }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--gold-bright)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--gold)'; }}>
               Join Waitlist ✦
             </button>
           </div>
         )}
 
-        <button onClick={onDismiss} className="mt-4 text-xs py-2 px-4" style={{ color: 'var(--text-ghost)' }}>
+        <button
+          onClick={onDismiss}
+          className="mt-4 text-xs px-4 transition-colors"
+          style={{ color: 'var(--text-ghost)', minHeight: 44 }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-ghost)'; }}
+        >
           Dismiss
         </button>
       </div>

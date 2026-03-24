@@ -116,9 +116,9 @@ export default function QuestionInput({
           className="w-full resize-none disabled:opacity-50 transition-all font-serif"
           style={{
             background: "#FFFFFF",
-            border: "1px solid #D4C9B8",
+            border: "1px solid var(--glass-border)",
             borderRadius: 22,
-            boxShadow: "0 4px 20px rgba(26,58,107,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
+            boxShadow: "var(--shadow-search), inset 0 1px 0 rgba(255,255,255,0.9)",
             color: "var(--text-primary)",
             outline: "none",
             padding: "14px 80px 14px 22px",
@@ -126,14 +126,14 @@ export default function QuestionInput({
             lineHeight: 1.5,
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = "#C4B89C";
+            e.currentTarget.style.borderColor = "var(--glass-border-hover)";
             e.currentTarget.style.boxShadow =
-              "0 4px 20px rgba(26,58,107,0.08), 0 0 0 3px rgba(26,58,107,0.06)";
+              "var(--shadow-search), 0 0 0 3px rgba(26,58,107,0.06)";
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = "#D4C9B8";
+            e.currentTarget.style.borderColor = "var(--glass-border)";
             e.currentTarget.style.boxShadow =
-              "0 4px 20px rgba(26,58,107,0.06), inset 0 1px 0 rgba(255,255,255,0.9)";
+              "var(--shadow-search), inset 0 1px 0 rgba(255,255,255,0.9)";
           }}
         />
         {/* Placeholder colour handled via inline style workaround in globals */}
@@ -189,8 +189,8 @@ export default function QuestionInput({
               width: 48,
               height: 48,
               borderRadius: 16,
-              background: "linear-gradient(135deg, #1A3A6B, #2A5298)",
-              color: "#FAF6EF",
+              background: "linear-gradient(135deg, var(--krishna-blue), var(--krishna-blue-light))",
+              color: "var(--sanctum)",
               boxShadow: "0 2px 8px rgba(26,58,107,0.2)",
               border: "none",
             }}
@@ -199,7 +199,7 @@ export default function QuestionInput({
             {isLoading ? (
               <svg
                 className="w-5 h-5 animate-spin"
-                style={{ color: "#FAF6EF" }}
+                style={{ color: "var(--sanctum)" }}
                 fill="none"
                 viewBox="0 0 24 24"
               >
@@ -220,7 +220,7 @@ export default function QuestionInput({
             ) : (
               <svg
                 className="w-5 h-5"
-                style={{ color: "#FAF6EF" }}
+                style={{ color: "var(--sanctum)" }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -243,7 +243,7 @@ export default function QuestionInput({
       {/* Example question cards */}
       <div className="mt-6 grid grid-cols-1 gap-3 max-w-xl mx-auto">
         {EXAMPLE_QUESTIONS.slice(0, 3).map((eq, i) => {
-          const accents = ["#1A3A6B", "#C9A84C", "#C24D2C"];
+          const accents = ["var(--krishna-blue)", "var(--gold)", "var(--vermillion)"];
           return (
             <button
               key={eq}
@@ -252,14 +252,14 @@ export default function QuestionInput({
               className="text-left transition-all duration-200 font-serif disabled:opacity-30"
               style={{
                 background: "var(--bg-card-gradient)",
-                border: "1px solid #D4C9B8",
+                border: "1px solid var(--glass-border)",
                 borderLeft: `3.5px solid ${accents[i % 3]}`,
                 borderRadius: 14,
                 padding: "18px 20px",
                 fontSize: 17,
-                color: "#2C4A78",
+                color: "var(--text-body)",
                 minHeight: 56,
-                boxShadow: "0 1px 3px rgba(26,58,107,0.04), 0 1px 2px rgba(0,0,0,0.03)",
+                boxShadow: "var(--shadow-card)",
               }}
             >
               {eq}

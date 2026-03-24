@@ -578,7 +578,7 @@ export default function RichAnswer({ text, mode = "text", isStreaming }: Props) 
                 className="text-2xl font-serif pt-3 pb-2"
                 style={{
                   color: "var(--text-primary)",
-                  borderBottom: "1px solid #D4C9B8",
+                  borderBottom: "1px solid var(--glass-border)",
                   letterSpacing: "-0.02em",
                 }}
               >

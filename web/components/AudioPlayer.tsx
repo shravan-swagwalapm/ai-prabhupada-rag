@@ -142,7 +142,7 @@ export default function AudioPlayer({ audioId }: Props) {
       <div
         className="overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, #1A3A6B, #15305A)",
+          background: "linear-gradient(135deg, var(--krishna-blue), var(--krishna-blue-dark))",
           borderRadius: 16,
         }}
       >
@@ -181,12 +181,12 @@ export default function AudioPlayer({ audioId }: Props) {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
             ) : state === "playing" ? (
-              <svg className="w-5 h-5" style={{ color: "#1A3A6B" }} fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" style={{ color: "var(--krishna-blue)" }} fill="currentColor" viewBox="0 0 24 24">
                 <rect x="6" y="4" width="4" height="16" rx="1" />
                 <rect x="14" y="4" width="4" height="16" rx="1" />
               </svg>
             ) : (
-              <svg className="w-5 h-5 ml-0.5" style={{ color: "#1A3A6B" }} fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 ml-0.5" style={{ color: "var(--krishna-blue)" }} fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
             )}

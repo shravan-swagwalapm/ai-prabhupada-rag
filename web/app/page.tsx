@@ -209,11 +209,11 @@ export default function Home() {
               <div
                 className="w-9 h-9 rounded-full flex items-center justify-center"
                 style={{
-                  background: "linear-gradient(135deg, #1A3A6B, #2A5298)",
+                  background: "linear-gradient(135deg, var(--krishna-blue), var(--krishna-blue-light))",
                   border: "2px solid var(--glass-border-hover)",
                 }}
               >
-                <span className="text-sm font-sans font-semibold" style={{ color: "#FAF6EF" }}>
+                <span className="text-sm font-sans font-semibold" style={{ color: "var(--sanctum)" }}>
                   {user?.name?.charAt(0)?.toUpperCase() || "?"}
                 </span>
               </div>
@@ -261,7 +261,7 @@ export default function Home() {
             style={{
               border: "1px solid var(--glass-border)",
               borderRadius: 14,
-              background: "#FAF6EF",
+              background: "var(--sanctum)",
               padding: "4px",
             }}
           >
