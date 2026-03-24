@@ -77,7 +77,7 @@ export default function HistoryPage() {
             </svg>
           </button>
           <h1 className="text-2xl font-serif" style={{ color: "var(--text-primary)" }}>Your Questions</h1>
-          <span className="text-xs font-sans ml-auto" style={{ color: "var(--text-muted)" }}>
+          <span className="text-sm font-sans ml-auto" style={{ color: "var(--text-secondary)" }}>
             {total} total
           </span>
         </div>
@@ -130,14 +130,14 @@ export default function HistoryPage() {
                 >
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : entry.id)}
-                    className="w-full text-left p-4 flex items-start gap-3"
+                    className="w-full text-left px-4 py-5 flex items-start gap-3"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-serif line-clamp-2" style={{ color: "var(--text-primary)" }}>
+                      <p className="font-serif line-clamp-2" style={{ color: "var(--text-primary)", fontSize: 16 }}>
                         {entry.question}
                       </p>
-                      <p className="text-xs font-sans mt-1" style={{ color: "var(--text-muted)" }}>
-                        {date} &middot; {entry.answer_mode}
+                      <p className="text-sm font-sans mt-1.5" style={{ color: "var(--text-secondary)" }}>
+                        {date} · {entry.answer_mode}
                       </p>
                     </div>
                     <svg
@@ -147,7 +147,7 @@ export default function HistoryPage() {
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
-                      style={{ color: "var(--text-muted)" }}
+                      style={{ color: "var(--text-secondary)" }}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>

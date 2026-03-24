@@ -17,7 +17,7 @@ export default function QuotaBar({
   const voiceExhausted = voiceQuota <= 0;
 
   return (
-    <div className="hidden sm:flex items-center gap-3 text-xs font-display tracking-wide">
+    <div className="flex items-center gap-3 text-xs font-display tracking-wide">
       <span
         style={{
           color: textExhausted ? "var(--vermillion)" : "var(--tulsi)",

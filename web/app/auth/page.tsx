@@ -477,7 +477,7 @@ export default function AuthPage() {
                 </div>
               </div>
               <span
-                className="text-[10px] font-mono shrink-0"
+                className="text-xs font-mono shrink-0"
                 style={{ color: "var(--text-muted)" }}
               >
                 1:24 / 4:02
