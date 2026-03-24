@@ -248,7 +248,7 @@ export default function QuestionInput({
             <button
               key={eq}
               onClick={() => { setQuestion(eq); onSubmit(eq); }}
-              disabled={isLoading || disabled}
+              disabled={isLoading}
               className="text-left transition-all duration-200 font-serif disabled:opacity-30"
               style={{
                 background: "var(--bg-card-gradient)",
