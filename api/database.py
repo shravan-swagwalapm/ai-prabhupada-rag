@@ -11,10 +11,12 @@ import json
 import logging
 import os
 import sqlite3
+import threading
 import uuid
-from datetime import datetime
+from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Generator, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -26,21 +28,45 @@ DB_PATH = DATA_DIR / "prabhupada.db"
 DEFAULT_TEXT_QUOTA = 5
 DEFAULT_VOICE_QUOTA = 2
 
+# Thread-local storage for connection reuse
+_local = threading.local()
+
 
 def _get_conn() -> sqlite3.Connection:
-    """Get a thread-local SQLite connection with WAL mode."""
+    """Get a thread-local SQLite connection with WAL mode.
+    Reuses the same connection per thread to avoid lock contention."""
+    conn = getattr(_local, "conn", None)
+    if conn is not None:
+        try:
+            conn.execute("SELECT 1")
+            return conn
+        except sqlite3.ProgrammingError:
+            _local.conn = None
+
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH), check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
+    conn.execute("PRAGMA busy_timeout=5000")
+    _local.conn = conn
     return conn
+
+
+@contextmanager
+def _db() -> Generator[sqlite3.Connection, None, None]:
+    """Context manager for database operations. Reuses thread-local connection."""
+    yield _get_conn()
+
+
+def _utcnow() -> str:
+    """UTC timestamp as ISO string (timezone-aware, avoids deprecated utcnow)."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 def init_db() -> None:
     """Create all tables if they don't exist."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
@@ -91,20 +117,16 @@ def init_db() -> None:
         """)
         conn.commit()
         logger.info("Database initialized at %s", DB_PATH)
-    finally:
-        conn.close()
 
 
 def upsert_user(google_id: str, email: str, name: str, photo_url: Optional[str]) -> str:
     """Create or update a user by google_id. Returns user id."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         row = conn.execute(
             "SELECT id FROM users WHERE google_id = ?", (google_id,)
         ).fetchone()
 
         if row:
-            # Update existing user info (name/photo may change)
             conn.execute(
                 "UPDATE users SET email = ?, name = ?, photo_url = ? WHERE google_id = ?",
                 (email, name, photo_url, google_id),
@@ -112,44 +134,34 @@ def upsert_user(google_id: str, email: str, name: str, photo_url: Optional[str])
             conn.commit()
             return row["id"]
 
-        # New user
         user_id = str(uuid.uuid4())
-        now = datetime.utcnow().isoformat()
         conn.execute(
             """INSERT INTO users (id, google_id, email, name, photo_url, text_quota, voice_quota, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (user_id, google_id, email, name, photo_url,
-             DEFAULT_TEXT_QUOTA, DEFAULT_VOICE_QUOTA, now),
+             DEFAULT_TEXT_QUOTA, DEFAULT_VOICE_QUOTA, _utcnow()),
         )
         conn.commit()
         logger.info("New user created: %s (%s)", name, email)
         return user_id
-    finally:
-        conn.close()
 
 
 def get_user(user_id: str) -> Optional[Dict[str, Any]]:
     """Get user by id. Returns dict or None."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
         return dict(row) if row else None
-    finally:
-        conn.close()
 
 
 def get_quota(user_id: str) -> Dict[str, int]:
     """Get remaining quota for a user."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         row = conn.execute(
             "SELECT text_quota, voice_quota FROM users WHERE id = ?", (user_id,)
         ).fetchone()
         if not row:
             return {"text_quota": 0, "voice_quota": 0}
         return {"text_quota": row["text_quota"], "voice_quota": row["voice_quota"]}
-    finally:
-        conn.close()
 
 
 def decrement_quota(user_id: str, mode: str) -> bool:
@@ -157,16 +169,13 @@ def decrement_quota(user_id: str, mode: str) -> bool:
     if mode not in ("text", "voice"):
         raise ValueError(f"Invalid quota mode: {mode!r}")
     col = "text_quota" if mode == "text" else "voice_quota"
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         result = conn.execute(
             f"UPDATE users SET {col} = {col} - 1 WHERE id = ? AND {col} > 0",
             (user_id,),
         )
         conn.commit()
         return result.rowcount > 0
-    finally:
-        conn.close()
 
 
 def refund_quota(user_id: str, mode: str) -> None:
@@ -174,26 +183,20 @@ def refund_quota(user_id: str, mode: str) -> None:
     if mode not in ("text", "voice"):
         raise ValueError(f"Invalid quota mode: {mode!r}")
     col = "text_quota" if mode == "text" else "voice_quota"
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         conn.execute(f"UPDATE users SET {col} = {col} + 1 WHERE id = ?", (user_id,))
         conn.commit()
-    finally:
-        conn.close()
 
 
 def reset_quota(email: str, text_quota: int = DEFAULT_TEXT_QUOTA, voice_quota: int = DEFAULT_VOICE_QUOTA) -> bool:
     """Reset quota for a user by email. Returns True if user was found and updated."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         result = conn.execute(
             "UPDATE users SET text_quota = ?, voice_quota = ? WHERE email = ?",
             (text_quota, voice_quota, email),
         )
         conn.commit()
         return result.rowcount > 0
-    finally:
-        conn.close()
 
 
 def save_question(
@@ -205,25 +208,20 @@ def save_question(
     passages_json: str,
 ) -> str:
     """Save a Q&A to history. Returns question id."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         qid = str(uuid.uuid4())
-        now = datetime.utcnow().isoformat()
         conn.execute(
             """INSERT INTO questions (id, user_id, question, answer_text, answer_mode, audio_id, passages_json, created_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (qid, user_id, question, answer_text, mode, audio_id, passages_json, now),
+            (qid, user_id, question, answer_text, mode, audio_id, passages_json, _utcnow()),
         )
         conn.commit()
         return qid
-    finally:
-        conn.close()
 
 
 def get_history(user_id: str, limit: int = 20, offset: int = 0) -> Dict[str, Any]:
     """Get paginated question history for a user."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         rows = conn.execute(
             """SELECT id, question, answer_text, answer_mode, audio_id, passages_json, created_at
                FROM questions WHERE user_id = ?
@@ -237,24 +235,18 @@ def get_history(user_id: str, limit: int = 20, offset: int = 0) -> Dict[str, Any
 
         entries = [dict(r) for r in rows]
         return {"entries": entries, "total": total_row["cnt"]}
-    finally:
-        conn.close()
 
 
 def save_waitlist(email: str, user_id: Optional[str] = None) -> str:
     """Add email to waitlist. Returns waitlist entry id."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         wid = str(uuid.uuid4())
-        now = datetime.utcnow().isoformat()
         conn.execute(
             "INSERT INTO waitlist (id, email, user_id, created_at) VALUES (?, ?, ?, ?)",
-            (wid, email, user_id, now),
+            (wid, email, user_id, _utcnow()),
         )
         conn.commit()
         return wid
-    finally:
-        conn.close()
 
 
 # ── Answer Cache CRUD ────────────────────────────────────────────────────────
@@ -268,10 +260,9 @@ def save_cache_entry(
     embedding_blob: bytes,
 ) -> str:
     """Save an answer to the semantic cache. Returns cache entry id."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         cid = str(uuid.uuid4())
-        now = datetime.utcnow().isoformat()
+        now = _utcnow()
         conn.execute(
             """INSERT INTO answer_cache
                (id, question, answer_text, audio_id, mode, passages_json, embedding_blob, created_at, last_used_at)
@@ -280,50 +271,35 @@ def save_cache_entry(
         )
         conn.commit()
         return cid
-    finally:
-        conn.close()
 
 
 def get_all_cache_entries() -> List[Dict[str, Any]]:
     """Load all cache entries (for populating in-memory cache at startup)."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         rows = conn.execute(
             "SELECT id, question, answer_text, audio_id, mode, passages_json, embedding_blob, last_used_at FROM answer_cache ORDER BY last_used_at DESC"
         ).fetchall()
         return [dict(r) for r in rows]
-    finally:
-        conn.close()
 
 
 def update_cache_last_used(cache_id: str) -> None:
     """Update last_used_at for LRU tracking."""
-    conn = _get_conn()
-    try:
-        now = datetime.utcnow().isoformat()
+    with _db() as conn:
         conn.execute(
-            "UPDATE answer_cache SET last_used_at = ? WHERE id = ?", (now, cache_id)
+            "UPDATE answer_cache SET last_used_at = ? WHERE id = ?", (_utcnow(), cache_id)
         )
         conn.commit()
-    finally:
-        conn.close()
 
 
 def delete_cache_entry(cache_id: str) -> None:
     """Delete a cache entry (for LRU eviction)."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         conn.execute("DELETE FROM answer_cache WHERE id = ?", (cache_id,))
         conn.commit()
-    finally:
-        conn.close()
 
 
 def get_cache_count() -> int:
     """Get current number of cache entries."""
-    conn = _get_conn()
-    try:
+    with _db() as conn:
         row = conn.execute("SELECT COUNT(*) as cnt FROM answer_cache").fetchone()
         return row["cnt"]
-    finally:
-        conn.close()

@@ -10,7 +10,8 @@ interface Props {
 type AudioState = "idle" | "generating" | "ready" | "playing" | "paused" | "error";
 
 const POLL_TIMEOUT_MS = 5 * 60 * 1000;
-const POLL_INTERVAL_MS = 1500;
+const POLL_INITIAL_INTERVAL_MS = 1500;
+const POLL_MAX_INTERVAL_MS = 10_000;
 
 export default function AudioPlayer({ audioId }: Props) {
   const [state, setState] = useState<AudioState>("idle");
@@ -38,28 +39,41 @@ export default function AudioPlayer({ audioId }: Props) {
 
     setState("generating");
     pollStartRef.current = Date.now();
+    let currentInterval = POLL_INITIAL_INTERVAL_MS;
 
-    const poll = async () => {
-      if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
-        setState("error");
-        stopPolling();
-        return;
-      }
+    const schedulePoll = () => {
+      intervalRef.current = setTimeout(async () => {
+        if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
+          setState("error");
+          return;
+        }
 
-      const status = await checkAudioStatus(audioId);
-      if (status === null) return;
+        const status = await checkAudioStatus(audioId);
+        if (status === null) {
+          schedulePoll();
+          return;
+        }
 
-      if (status.status === "ready") {
-        setState("ready");
-        stopPolling();
-      } else if (status.status === "error" || status.status === "not_found") {
-        setState("error");
-        stopPolling();
-      }
+        if (status.status === "ready") {
+          setState("ready");
+        } else if (status.status === "error" || status.status === "not_found") {
+          setState("error");
+        } else {
+          // Exponential backoff: double interval up to max
+          currentInterval = Math.min(currentInterval * 2, POLL_MAX_INTERVAL_MS);
+          schedulePoll();
+        }
+      }, currentInterval) as unknown as ReturnType<typeof setInterval>;
     };
 
-    poll();
-    intervalRef.current = setInterval(poll, POLL_INTERVAL_MS);
+    // First poll immediately
+    (async () => {
+      const status = await checkAudioStatus(audioId);
+      if (status?.status === "ready") { setState("ready"); return; }
+      if (status?.status === "error" || status?.status === "not_found") { setState("error"); return; }
+      schedulePoll();
+    })();
+
     return () => stopPolling();
   }, [audioId]);
 

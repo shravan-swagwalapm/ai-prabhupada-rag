@@ -100,6 +100,8 @@ export default function AuthPage() {
               src="/prabhupada-walking.png"
               alt="Srila Prabhupada on his morning walk"
               className="relative"
+              width={169}
+              height={260}
               style={{ height: 260, width: "auto" }}
             />
           </picture>

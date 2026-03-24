@@ -130,6 +130,8 @@ export default function HistoryPage() {
                 >
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : entry.id)}
+                    aria-expanded={isExpanded}
+                    aria-label={`${isExpanded ? "Collapse" : "Expand"} answer for: ${entry.question}`}
                     className="w-full text-left px-4 py-5 flex items-start gap-3"
                   >
                     <div className="flex-1 min-w-0">

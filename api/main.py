@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FastAPI Backend — AI Prabhupada RAG API
+FastAPI Backend — Prabhupada AI RAG API
 
 Endpoints:
     POST /api/auth/google     — Google Sign-In → JWT
@@ -218,7 +218,7 @@ async def lifespan(app: FastAPI):
 # ── App ───────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="AI Prabhupada RAG API",
+    title="Prabhupada AI RAG API",
     description=(
         "Spiritual question-answering powered by FAISS search, "
         "Claude Sonnet 4.5, and Prabhupada's voice"
@@ -403,6 +403,12 @@ async def join_waitlist(
 ADMIN_SECRET = os.getenv("ADMIN_SECRET", "")
 
 
+class AdminResetRequest(BaseModel):
+    email: str = Field(..., min_length=1, max_length=320)
+    text_quota: int = Field(default=5, ge=0, le=1000)
+    voice_quota: int = Field(default=2, ge=0, le=1000)
+
+
 @app.post("/api/admin/reset-quota")
 async def admin_reset_quota(
     request: Request,
@@ -413,18 +419,13 @@ async def admin_reset_quota(
         return JSONResponse(status_code=403, content={"detail": "Forbidden"})
 
     body = await request.json()
-    email = body.get("email", "")
-    text_quota = body.get("text_quota", 5)
-    voice_quota = body.get("voice_quota", 2)
+    req = AdminResetRequest(**body)
 
-    if not email:
-        return JSONResponse(status_code=400, content={"detail": "email is required"})
-
-    found = reset_quota(email, text_quota=text_quota, voice_quota=voice_quota)
+    found = reset_quota(req.email, text_quota=req.text_quota, voice_quota=req.voice_quota)
     if not found:
-        return JSONResponse(status_code=404, content={"detail": f"User {email} not found"})
+        return JSONResponse(status_code=404, content={"detail": f"User {req.email} not found"})
 
-    return {"status": "ok", "email": email, "text_quota": text_quota, "voice_quota": voice_quota}
+    return {"status": "ok", "email": req.email, "text_quota": req.text_quota, "voice_quota": req.voice_quota}
 
 
 # ── Query Endpoints (with auth + quota) ──────────────────────────────────────
@@ -630,6 +631,10 @@ async def query_stream(
     async def event_stream():
         nonlocal question, mode
 
+        # Helper: check if client disconnected to avoid wasting API credits
+        async def _client_gone() -> bool:
+            return await request.is_disconnected()
+
         # Step 1: FAISS search (with embedding for cache)
         raw_results = None
         embedding = None
@@ -693,6 +698,12 @@ async def query_stream(
                 return
 
         # Step 3: Stream fresh AI answer
+        # Check if client disconnected before burning Claude credits
+        if await _client_gone():
+            refund_quota(user_id, mode)
+            logger.info("Client disconnected before answer generation — refunded quota")
+            return
+
         full_answer: List[str] = []
         answer_mode = "concise" if include_voice else "full"
 
@@ -823,7 +834,6 @@ async def audio_status(audio_id: str):
 # Static frontend serving (MUST be LAST — catches all non-API routes)
 # ---------------------------------------------------------------------------
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
 _frontend_dir = PROJECT_ROOT / "web" / "out"
 if _frontend_dir.exists():

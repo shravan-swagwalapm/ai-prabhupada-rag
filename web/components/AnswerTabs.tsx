@@ -107,7 +107,7 @@ export default function AnswerTabs({
                 <span className="absolute inset-0 rounded-full animate-ping" style={{ background: "rgba(201,168,76,0.3)" }} />
                 <span className="relative block w-5 h-5 rounded-full" style={{ background: "rgba(201,168,76,0.6)" }} />
               </div>
-              <span className="font-serif italic">Searching 13 sacred texts...</span>
+              <span className="font-serif italic">Searching 14 sacred texts...</span>
             </div>
           ) : (
             <>

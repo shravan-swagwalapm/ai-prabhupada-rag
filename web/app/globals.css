@@ -222,11 +222,14 @@ textarea:focus {
   animation: golden-aura 4s ease-in-out infinite;
 }
 
-/* Respect reduced-motion preferences */
+/* Respect reduced-motion preferences — disable ALL animations */
 @media (prefers-reduced-motion: reduce) {
-  .prabhupada-walk,
-  .prabhupada-aura {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

@@ -5,19 +5,14 @@
  * stores JWT and user info in localStorage.
  */
 
+import type { UserInfo } from "./api";
+
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 const TOKEN_KEY = "prabhupada_token";
 const USER_KEY = "prabhupada_user";
 const API_BASE = "/api";
 
-export interface UserInfo {
-  id: string;
-  email: string;
-  name: string;
-  photo_url: string | null;
-  text_quota: number;
-  voice_quota: number;
-}
+export type { UserInfo };
 
 interface AuthResult {
   token: string;
@@ -64,7 +59,16 @@ function renderGSIButton(
         const result = await loginWithGoogle(response.credential);
         onSuccess(result.user);
       } catch (err) {
-        // Auth error — Google button will remain visible for retry
+        // Show inline error so user knows auth failed
+        const el = document.getElementById(buttonElementId);
+        if (el && !el.querySelector(".auth-error")) {
+          const msg = document.createElement("p");
+          msg.className = "auth-error";
+          msg.style.cssText = "color:#C24D2C;font-size:13px;margin-top:8px;text-align:center;";
+          msg.textContent = "Sign-in failed. Please try again.";
+          el.parentElement?.appendChild(msg);
+          setTimeout(() => msg.remove(), 5000);
+        }
       }
     },
   });

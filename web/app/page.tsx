@@ -13,6 +13,10 @@ import LotusWatermark from "@/components/LotusWatermark";
 import WarmSkeleton from "@/components/WarmSkeleton";
 import { queryStream, type Passage } from "@/lib/api";
 
+// Must match api/database.py DEFAULT_TEXT_QUOTA / DEFAULT_VOICE_QUOTA
+const DEFAULT_TEXT_QUOTA = 5;
+const DEFAULT_VOICE_QUOTA = 2;
+
 export default function Home() {
   const { user, isAuthenticated, isLoading: authLoading, refreshUser, logout } = useAuth();
   const router = useRouter();
@@ -96,6 +100,8 @@ export default function Home() {
           onNoMatch: (message: string) => {
             setAnswer(message);
             setPassages([]);
+            setIsLoading(false);
+            setIsSearching(false);
             setIsStreaming(false);
           },
         },
@@ -253,6 +259,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setVoiceEnabled(false)}
+              aria-pressed={!voiceEnabled}
               className="px-5 py-2 text-sm font-sans font-semibold transition-all duration-200"
               style={{
                 background: !voiceEnabled ? "#FFFFFF" : "transparent",
@@ -273,6 +280,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setVoiceEnabled(true)}
+              aria-pressed={voiceEnabled}
               className="flex items-center gap-2 px-5 py-2 text-sm font-sans font-semibold transition-all duration-200"
               style={{
                 background: voiceEnabled ? "#FFFFFF" : "transparent",
@@ -363,8 +371,8 @@ export default function Home() {
         <SubscribeGate
           quotaType={quotaWallType}
           userEmail={user?.email ?? ""}
-          textUsed={5 - (user?.text_quota ?? 0)}
-          voiceUsed={2 - (user?.voice_quota ?? 0)}
+          textUsed={DEFAULT_TEXT_QUOTA - (user?.text_quota ?? 0)}
+          voiceUsed={DEFAULT_VOICE_QUOTA - (user?.voice_quota ?? 0)}
           onSubmit={() => setShowQuotaWall(false)}
           onDismiss={() => setShowQuotaWall(false)}
         />
