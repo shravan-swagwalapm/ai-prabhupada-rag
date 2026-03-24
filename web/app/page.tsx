@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import QuestionInput from "@/components/QuestionInput";
 import AnswerTabs from "@/components/AnswerTabs";
 import QuotaBar from "@/components/QuotaBar";
+import FontSizeToggle from "@/components/FontSizeToggle";
 import SubscribeGate from "@/components/SubscribeGate";
 import ShareBar from "@/components/ShareBar";
 import LotusWatermark from "@/components/LotusWatermark";
@@ -162,13 +163,14 @@ export default function Home() {
         </div>
 
         {/* Right side: quota + history + avatar */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {user && (
             <QuotaBar
               textQuota={user.text_quota}
               voiceQuota={user.voice_quota}
             />
           )}
+          <FontSizeToggle />
           <a
             href="/history/"
             className="flex items-center justify-center transition-all"
