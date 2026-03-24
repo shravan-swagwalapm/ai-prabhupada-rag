@@ -823,8 +823,24 @@ async def audio_status(audio_id: str):
 # Static frontend serving (MUST be LAST — catches all non-API routes)
 # ---------------------------------------------------------------------------
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 _frontend_dir = PROJECT_ROOT / "web" / "out"
 if _frontend_dir.exists():
-    app.mount("/", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")
+    # Explicit HTML routes — bypass StaticFiles content negotiation which can
+    # serve index.txt (RSC payload) instead of index.html on some CDN edges
+    _page_routes = ["/", "/auth", "/auth/", "/history", "/history/"]
+
+    for _route in _page_routes:
+        # Determine which index.html to serve
+        _segments = _route.strip("/")
+        _html_path = _frontend_dir / (_segments if _segments else "") / "index.html"
+        if _html_path.exists():
+            _path = str(_html_path)
+            app.get(_route, response_class=FileResponse, include_in_schema=False)(
+                lambda p=_path: FileResponse(p, media_type="text/html")
+            )
+
+    # Everything else (JS, CSS, images, etc.) via StaticFiles
+    app.mount("/", StaticFiles(directory=str(_frontend_dir)), name="frontend")
     logger.info("Serving frontend from %s", _frontend_dir)
