@@ -672,11 +672,19 @@ async def query_stream(
 
         async def faq_stream():
             yield f"data: {json_module.dumps({'type': 'passages', 'data': faq_entry['passages']})}\n\n"
-            sentences = re.split(r'(?<=[.!?])\s+', faq_entry["answer_text"])
-            for sentence in sentences:
-                if sentence.strip():
-                    yield f"data: {json_module.dumps({'type': 'answer_chunk', 'data': sentence + ' '})}\n\n"
-                    await asyncio.sleep(0.02)
+            # Stream paragraph-by-paragraph to preserve \n\n structure
+            paragraphs = faq_entry["answer_text"].split("\n\n")
+            for pi, para in enumerate(paragraphs):
+                if para.strip():
+                    # Stream each paragraph as sentence chunks
+                    sentences = re.split(r'(?<=[.!?])\s+', para)
+                    for sentence in sentences:
+                        if sentence.strip():
+                            yield f"data: {json_module.dumps({'type': 'answer_chunk', 'data': sentence + ' '})}\n\n"
+                            await asyncio.sleep(0.02)
+                    # Add paragraph break after each paragraph (except last)
+                    if pi < len(paragraphs) - 1:
+                        yield f"data: {json_module.dumps({'type': 'answer_chunk', 'data': chr(10) + chr(10)})}\n\n"
             yield f"data: {json_module.dumps({'type': 'done', 'cached': True})}\n\n"
 
         return StreamingResponse(
@@ -722,13 +730,18 @@ async def query_stream(
                 passages = []
             yield f"data: {json_module.dumps({'type': 'passages', 'data': passages})}\n\n"
 
-            # Emit cached answer in sentence chunks (preserves streaming UX)
+            # Emit cached answer paragraph-by-paragraph to preserve formatting
             cached_text = cached_answer.get("answer_text", "")
-            sentences = re.split(r'(?<=[.!?])\s+', cached_text)
-            for sentence in sentences:
-                if sentence.strip():
-                    yield f"data: {json_module.dumps({'type': 'answer_chunk', 'data': sentence + ' '})}\n\n"
-                    await asyncio.sleep(0.02)
+            paragraphs = cached_text.split("\n\n")
+            for pi, para in enumerate(paragraphs):
+                if para.strip():
+                    sentences = re.split(r'(?<=[.!?])\s+', para)
+                    for sentence in sentences:
+                        if sentence.strip():
+                            yield f"data: {json_module.dumps({'type': 'answer_chunk', 'data': sentence + ' '})}\n\n"
+                            await asyncio.sleep(0.02)
+                    if pi < len(paragraphs) - 1:
+                        yield f"data: {json_module.dumps({'type': 'answer_chunk', 'data': chr(10) + chr(10)})}\n\n"
 
             # Emit audio_id if available and voice was requested
             if include_voice and cached_answer.get("audio_id"):
