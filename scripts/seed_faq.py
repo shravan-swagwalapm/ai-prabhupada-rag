@@ -31,7 +31,7 @@ FAQ_QUESTIONS = [
 ]
 
 TOP_K = 5
-MODE = "concise"
+MODE = "full"
 
 OUTPUT = PROJECT_ROOT / "data" / "faq.json"
 
