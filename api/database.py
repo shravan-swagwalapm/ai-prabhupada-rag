@@ -169,6 +169,19 @@ def decrement_quota(user_id: str, mode: str) -> bool:
         conn.close()
 
 
+def refund_quota(user_id: str, mode: str) -> None:
+    """Refund one quota unit (e.g., when a query fails after atomic decrement)."""
+    if mode not in ("text", "voice"):
+        raise ValueError(f"Invalid quota mode: {mode!r}")
+    col = "text_quota" if mode == "text" else "voice_quota"
+    conn = _get_conn()
+    try:
+        conn.execute(f"UPDATE users SET {col} = {col} + 1 WHERE id = ?", (user_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def reset_quota(email: str, text_quota: int = DEFAULT_TEXT_QUOTA, voice_quota: int = DEFAULT_VOICE_QUOTA) -> bool:
     """Reset quota for a user by email. Returns True if user was found and updated."""
     conn = _get_conn()

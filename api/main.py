@@ -41,7 +41,7 @@ from pydantic import BaseModel, Field, field_validator
 from api.auth import verify_google_token, create_jwt
 from api.circuit_breaker import CircuitBreaker
 from api.database import (
-    init_db, upsert_user, get_user, get_quota, decrement_quota,
+    init_db, upsert_user, get_user, get_quota, decrement_quota, refund_quota,
     save_question, get_history, save_waitlist, reset_quota,
 )
 from api.middleware import get_current_user
@@ -87,6 +87,7 @@ _RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "10"))
 _RATE_LIMIT_WINDOW_SECS = int(os.getenv("RATE_LIMIT_WINDOW_SECS", "60"))
 _rate_limit_store: Dict[str, collections.deque] = {}
 _rate_limit_lock = threading.Lock()
+_MAX_RATE_LIMIT_IPS = 10_000
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 _default_origins = "http://localhost:3000,http://localhost:3001,http://localhost:8000"
@@ -135,13 +136,23 @@ def _is_rate_limited(client_ip: str) -> bool:
 
         window.append(now)
 
-        if len(_rate_limit_store) > 5000:
+        # Hard cap: evict stale first, then oldest-seen if still over limit
+        if len(_rate_limit_store) > _MAX_RATE_LIMIT_IPS:
             stale = [
                 k for k, v in _rate_limit_store.items()
                 if not v or now - v[-1] > _RATE_LIMIT_WINDOW_SECS * 2
             ]
-            for k in stale[:2500]:
+            for k in stale:
                 del _rate_limit_store[k]
+            # If still over cap after stale eviction, evict oldest-seen IPs
+            if len(_rate_limit_store) > _MAX_RATE_LIMIT_IPS:
+                by_last_seen = sorted(
+                    _rate_limit_store.items(),
+                    key=lambda item: item[1][-1] if item[1] else 0,
+                )
+                evict_count = len(_rate_limit_store) - _MAX_RATE_LIMIT_IPS
+                for k, _ in by_last_seen[:evict_count]:
+                    del _rate_limit_store[k]
 
         return False
 
@@ -451,11 +462,10 @@ async def query_scriptures(
     if _search_func is None:
         raise HTTPException(status_code=503, detail="Search backend not ready")
 
-    # Quota check
+    # Quota check — atomic decrement to prevent TOCTOU race
     mode = "voice" if req.include_voice else "text"
-    quota = get_quota(user_id)
-    quota_key = f"{mode}_quota"
-    if quota[quota_key] <= 0:
+    quota_ok = decrement_quota(user_id, mode)
+    if not quota_ok:
         return JSONResponse(
             status_code=402,
             content={
@@ -464,6 +474,7 @@ async def query_scriptures(
                 "remaining": 0,
             },
         )
+    quota_decremented = True
 
     logger.info(
         "POST /api/query user=%s question='%s...' top_k=%d voice=%s",
@@ -486,7 +497,6 @@ async def query_scriptures(
                     )
                     for r in raw_results
                 ]
-                decrement_quota(user_id, mode)
                 save_question(user_id, req.question, cached["answer_text"], mode,
                               cached.get("audio_id"), cached.get("passages_json", "[]"))
                 return QueryResponse(
@@ -526,6 +536,7 @@ async def query_scriptures(
     # Relevance floor — return early if no passage meets MIN_RELEVANCE_SCORE
     relevant_results = [r for r in raw_results if r.get("similarity", 0) >= MIN_RELEVANCE_SCORE]
     if not relevant_results:
+        refund_quota(user_id, mode)  # No answer generated — refund the upfront decrement
         return QueryResponse(
             question=req.question,
             passages=passages,
@@ -546,6 +557,7 @@ async def query_scriptures(
             ai_answer = generate_answer(req.question, relevant_results, mode=answer_mode)
         except Exception as e:
             logger.error("Answer generation failed: %s", e, exc_info=True)
+            refund_quota(user_id, mode)  # AI failed — refund the upfront decrement
             raise HTTPException(status_code=500, detail=f"Answer generation failed: {e}")
 
     # Voice synthesis (background)
@@ -554,9 +566,8 @@ async def query_scriptures(
         _store_audio_job(audio_id, "pending")
         background_tasks.add_task(generate_audio_background, audio_id, ai_answer)
 
-    # Decrement quota + save history
+    # Save history (quota already decremented atomically at top)
     if ai_answer:
-        decrement_quota(user_id, mode)
         passages_json = json_module.dumps([
             {"scripture": r.get("scripture", ""), "text": r.get("text", ""),
              "similarity": round(r.get("similarity", 0.0), 4),
@@ -599,10 +610,9 @@ async def query_stream(
     question = question.strip()
     mode = "voice" if include_voice else "text"
 
-    # Quota check (before streaming)
-    quota = get_quota(user_id)
-    quota_key = f"{mode}_quota"
-    if quota[quota_key] <= 0:
+    # Quota check — atomic decrement to prevent TOCTOU race
+    quota_ok = decrement_quota(user_id, mode)
+    if not quota_ok:
         return JSONResponse(
             status_code=402,
             content={
@@ -652,6 +662,7 @@ async def query_stream(
         # Relevance floor — skip answer if no passage meets MIN_RELEVANCE_SCORE
         relevant_results = [r for r in raw_results if r.get("similarity", 0) >= MIN_RELEVANCE_SCORE]
         if not relevant_results:
+            refund_quota(user_id, mode)  # No answer generated — refund upfront decrement
             yield f"data: {json_module.dumps({'type': 'no_match', 'message': 'I could not find a direct teaching on this topic. Try rephrasing with specific scripture terms.'})}\n\n"
             yield f"data: {json_module.dumps({'type': 'done'})}\n\n"
             return
@@ -674,8 +685,7 @@ async def query_stream(
                 if include_voice and cached.get("audio_id"):
                     yield f"data: {json_module.dumps({'type': 'audio_id', 'data': cached['audio_id']})}\n\n"
 
-                # Decrement quota + save history
-                decrement_quota(user_id, mode)
+                # Save history (quota already decremented atomically at top)
                 save_question(user_id, question, cached_text, mode,
                               cached.get("audio_id"), cached.get("passages_json", "[]"))
 
@@ -695,6 +705,8 @@ async def query_stream(
                     await asyncio.sleep(0)
             except Exception as e:
                 logger.error("Streaming generation failed: %s", e)
+                if not full_answer:
+                    refund_quota(user_id, mode)  # No answer generated — refund
                 yield f"data: {json_module.dumps({'type': 'error', 'message': 'Answer generation failed'})}\n\n"
 
         # Step 4: Voice synthesis (background, with circuit breaker)
@@ -717,10 +729,9 @@ async def query_stream(
                 t.start()
                 yield f"data: {json_module.dumps({'type': 'audio_id', 'data': audio_id})}\n\n"
 
-        # Step 5: Decrement quota + save to history + cache
+        # Step 5: Save to history + cache (quota already decremented atomically at top)
         if full_answer:
             answer_text = "".join(full_answer)
-            decrement_quota(user_id, mode)
             passages_json = json_module.dumps([
                 {"scripture": r.get("scripture", ""), "text": r.get("text", ""),
                  "similarity": round(r.get("similarity", 0.0), 4),

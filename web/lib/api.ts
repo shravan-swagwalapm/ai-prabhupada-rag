@@ -272,6 +272,7 @@ export function queryStream(
 
       const decoder = new TextDecoder();
       let buffer = "";
+      let doneFired = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -305,7 +306,10 @@ export function queryStream(
                 // Voice unavailable (circuit breaker open)
                 break;
               case "done":
-                callbacks.onDone?.();
+                if (!doneFired) {
+                  doneFired = true;
+                  callbacks.onDone?.();
+                }
                 break;
               case "no_match":
                 callbacks.onNoMatch?.(data.message);
@@ -320,8 +324,10 @@ export function queryStream(
         }
       }
 
-      // If we get here without 'done', still notify completion
-      callbacks.onDone?.();
+      // If stream ended without a 'done' event, still notify completion
+      if (!doneFired) {
+        callbacks.onDone?.();
+      }
     } catch (err: any) {
       if (err.name === "AbortError") return; // Intentional cancel
       callbacks.onError?.("Connection to server lost. Please try again.");
