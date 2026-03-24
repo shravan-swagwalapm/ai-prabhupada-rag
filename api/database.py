@@ -237,6 +237,23 @@ def get_history(user_id: str, limit: int = 20, offset: int = 0) -> Dict[str, Any
         return {"entries": entries, "total": total_row["cnt"]}
 
 
+def find_cached_answer(user_id: str, question: str) -> Optional[Dict[str, Any]]:
+    """
+    Check if the user has already asked this exact question (case-insensitive).
+    Returns the most recent matching answer or None.
+    """
+    normalized = question.strip().lower()
+    with _db() as conn:
+        row = conn.execute(
+            """SELECT answer_text, answer_mode, audio_id, passages_json
+               FROM questions
+               WHERE user_id = ? AND LOWER(TRIM(question)) = ?
+               ORDER BY created_at DESC LIMIT 1""",
+            (user_id, normalized),
+        ).fetchone()
+        return dict(row) if row else None
+
+
 def save_waitlist(email: str, user_id: Optional[str] = None) -> str:
     """Add email to waitlist. Returns waitlist entry id."""
     with _db() as conn:

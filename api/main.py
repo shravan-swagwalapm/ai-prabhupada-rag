@@ -42,7 +42,7 @@ from api.auth import verify_google_token, create_jwt
 from api.circuit_breaker import CircuitBreaker
 from api.database import (
     init_db, upsert_user, get_user, get_quota, decrement_quota, refund_quota,
-    save_question, get_history, save_waitlist, reset_quota,
+    save_question, get_history, save_waitlist, reset_quota, find_cached_answer,
 )
 from api.middleware import get_current_user
 from api.models import (
@@ -482,6 +482,24 @@ async def query_scriptures(
         user_id[:8], req.question[:60], req.top_k, req.include_voice,
     )
 
+    # ── Exact-match history cache (zero-cost DB lookup) ──────────────────
+    cached_answer = find_cached_answer(user_id, req.question)
+    if cached_answer:
+        logger.info("Exact-match cache HIT for user=%s question='%s...'", user_id[:8], req.question[:40])
+        refund_quota(user_id, mode)
+        try:
+            passages = [PassageResult(**p) for p in json_module.loads(cached_answer.get("passages_json") or "[]")]
+        except Exception:
+            passages = []
+        return QueryResponse(
+            question=req.question,
+            passages=passages,
+            ai_answer=cached_answer.get("answer_text"),
+            audio_id=cached_answer.get("audio_id"),
+            search_method="cache",
+            cached=True,
+        )
+
     # Try semantic cache first (if embedding search available)
     if _answer_cache and _search_with_embedding_func:
         try:
@@ -627,6 +645,42 @@ async def query_stream(
         "GET /api/query/stream user=%s question='%s...' top_k=%d voice=%s",
         user_id[:8], question[:60], top_k, include_voice,
     )
+
+    # ── Step 0: Exact-match history cache (zero-cost DB lookup) ──────────
+    cached_answer = find_cached_answer(user_id, question)
+    if cached_answer:
+        logger.info("Exact-match cache HIT for user=%s question='%s...'", user_id[:8], question[:40])
+        # Refund the quota we just decremented — this is a free replay
+        refund_quota(user_id, mode)
+
+        async def cached_stream():
+            # Emit passages from cached answer
+            passages_json = cached_answer.get("passages_json") or "[]"
+            try:
+                passages = json_module.loads(passages_json)
+            except Exception:
+                passages = []
+            yield f"data: {json_module.dumps({'type': 'passages', 'data': passages})}\n\n"
+
+            # Emit cached answer in sentence chunks (preserves streaming UX)
+            cached_text = cached_answer.get("answer_text", "")
+            sentences = re.split(r'(?<=[.!?])\s+', cached_text)
+            for sentence in sentences:
+                if sentence.strip():
+                    yield f"data: {json_module.dumps({'type': 'answer_chunk', 'data': sentence + ' '})}\n\n"
+                    await asyncio.sleep(0.02)
+
+            # Emit audio_id if available and voice was requested
+            if include_voice and cached_answer.get("audio_id"):
+                yield f"data: {json_module.dumps({'type': 'audio_id', 'data': cached_answer['audio_id']})}\n\n"
+
+            yield f"data: {json_module.dumps({'type': 'done', 'cached': True})}\n\n"
+
+        return StreamingResponse(
+            cached_stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+        )
 
     async def event_stream():
         nonlocal question, mode
