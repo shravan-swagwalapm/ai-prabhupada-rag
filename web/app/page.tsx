@@ -222,7 +222,7 @@ export default function Home() {
           className="relative text-3xl sm:text-4xl font-serif font-bold leading-tight"
           style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
         >
-          Hare Krishna{user?.name ? `, ${user.name.split(" ")[0].charAt(0).toUpperCase()}${user.name.split(" ")[0].slice(1)}` : ""}.
+          Prabhupada AI{user?.name ? `, ${user.name.split(" ")[0].charAt(0).toUpperCase()}${user.name.split(" ")[0].slice(1)}` : ""}.
         </h1>
         <p
           className="relative mt-3 text-lg font-sans max-w-md mx-auto"

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { initGoogleSignIn } from "@/lib/auth";
 import AratiDivider from "@/components/AratiDivider";
-import PrabhupadaWalkingSVG from "@/components/PrabhupadaWalkingSVG";
 
 // ─── Scripture Data ──────────────────────────────────────────────────────────
 
@@ -84,18 +83,26 @@ export default function AuthPage() {
           }}
         />
 
-        {/* Walking Prabhupada — line art hero */}
+        {/* Walking Prabhupada — Gemini illustration */}
         <div className="relative flex items-center justify-center mb-2 sm:mb-6">
           {/* Golden aura behind the figure */}
           <div
             className="absolute prabhupada-aura rounded-full"
             style={{
-              width: 180,
-              height: 180,
+              width: 280,
+              height: 280,
               background: "radial-gradient(circle, rgba(201,168,76,0.12) 0%, rgba(201,168,76,0.03) 50%, transparent 70%)",
             }}
           />
-          <PrabhupadaWalkingSVG variant="hero" className="relative prabhupada-walk" />
+          <picture>
+            <source srcSet="/prabhupada-walking.webp" type="image/webp" />
+            <img
+              src="/prabhupada-walking.png"
+              alt="Srila Prabhupada on his morning walk"
+              className="relative prabhupada-walk"
+              style={{ height: 260, width: "auto" }}
+            />
+          </picture>
         </div>
 
         {/* Title */}
@@ -103,7 +110,7 @@ export default function AuthPage() {
           className="font-serif font-bold text-4xl sm:text-5xl text-center leading-tight"
           style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
         >
-          Hare Kṛṣṇa
+          Prabhupada AI
         </h1>
 
         <AratiDivider />
@@ -477,7 +484,7 @@ export default function AuthPage() {
               className="font-serif font-bold text-2xl mb-1"
               style={{ color: "#FAF6EF", letterSpacing: "-0.02em" }}
             >
-              Hare Kṛṣṇa
+              Prabhupada AI
             </h3>
 
             <AratiDivider />
