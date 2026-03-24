@@ -32,6 +32,9 @@ COPY scripts/ ./scripts/
 COPY config/ ./config/
 COPY rag_query.py ./
 
+# FAQ pre-rendered answers
+COPY data/faq.json ./data/faq.json
+
 # FAISS data (may be LFS pointers — app resolves at startup via GitHub LFS API)
 COPY faiss_indexes/ ./faiss_indexes/
 

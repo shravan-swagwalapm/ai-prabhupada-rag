@@ -74,6 +74,9 @@ _faiss_loaded = False
 # ── Semantic answer cache ────────────────────────────────────────────────────
 _answer_cache = None
 
+# ── FAQ pre-rendered answers (loaded at startup, zero cost) ─────────────────
+_faq_data: Dict[str, dict] = {}  # normalized question -> {answer_text, passages}
+
 # ── Circuit breaker for ElevenLabs ───────────────────────────────────────────
 _elevenlabs_breaker = CircuitBreaker()
 
@@ -184,6 +187,24 @@ def load_search() -> None:
             _faiss_loaded = False
 
 
+def _load_faq() -> None:
+    """Load pre-rendered FAQ answers from data/faq.json."""
+    global _faq_data
+    faq_path = PROJECT_ROOT / "data" / "faq.json"
+    if not faq_path.exists():
+        logger.warning("FAQ file not found at %s — FAQ disabled", faq_path)
+        return
+    try:
+        with open(faq_path) as f:
+            entries = json_module.load(f)
+        for entry in entries:
+            key = entry["question"].strip().lower()
+            _faq_data[key] = entry
+        logger.info("Loaded %d FAQ entries", len(_faq_data))
+    except Exception as e:
+        logger.error("Failed to load FAQ: %s", e)
+
+
 def _init_answer_cache() -> None:
     """Initialize the semantic answer cache at startup."""
     global _answer_cache
@@ -202,6 +223,7 @@ def _init_answer_cache() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    _load_faq()
     # Load FAISS in a background thread — LFS downloads can take 5-7 min
     # on Railway. The health endpoint returns 200 immediately so the
     # Railway healthcheck passes while FAISS loads.
@@ -463,8 +485,24 @@ async def query_scriptures(
     if _search_func is None:
         raise HTTPException(status_code=503, detail="Search backend not ready")
 
-    # Quota check — atomic decrement to prevent TOCTOU race
     mode = "voice" if req.include_voice else "text"
+
+    # ── FAQ check (pre-rendered, no quota consumed) ──────────────────────
+    faq_key = req.question.strip().lower()
+    faq_entry = _faq_data.get(faq_key)
+    if faq_entry:
+        logger.info("FAQ HIT for user=%s question='%s...'", user_id[:8], req.question[:40])
+        passages = [PassageResult(**p) for p in faq_entry["passages"]]
+        return QueryResponse(
+            question=req.question,
+            passages=passages,
+            ai_answer=faq_entry["answer_text"],
+            audio_id=None,
+            search_method="faq",
+            cached=True,
+        )
+
+    # Quota check — atomic decrement to prevent TOCTOU race
     quota_ok = decrement_quota(user_id, mode)
     if not quota_ok:
         return JSONResponse(
@@ -628,6 +666,27 @@ async def query_stream(
 
     question = question.strip()
     mode = "voice" if include_voice else "text"
+
+    # ── FAQ check (pre-rendered, no quota consumed) ──────────────────────
+    faq_key = question.strip().lower()
+    faq_entry = _faq_data.get(faq_key)
+    if faq_entry:
+        logger.info("FAQ HIT for user=%s question='%s...'", user_id[:8], question[:40])
+
+        async def faq_stream():
+            yield f"data: {json_module.dumps({'type': 'passages', 'data': faq_entry['passages']})}\n\n"
+            sentences = re.split(r'(?<=[.!?])\s+', faq_entry["answer_text"])
+            for sentence in sentences:
+                if sentence.strip():
+                    yield f"data: {json_module.dumps({'type': 'answer_chunk', 'data': sentence + ' '})}\n\n"
+                    await asyncio.sleep(0.02)
+            yield f"data: {json_module.dumps({'type': 'done', 'cached': True})}\n\n"
+
+        return StreamingResponse(
+            faq_stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
+        )
 
     # Quota check — atomic decrement to prevent TOCTOU race
     quota_ok = decrement_quota(user_id, mode)

@@ -14,8 +14,8 @@ const EXAMPLE_QUESTIONS = [
   "What is the nature of the soul?",
   "How should one perform their duty?",
   "What is the purpose of human life?",
-  "What does Krishna say about karma?",
-  "How to achieve peace of mind?",
+  "What should a person do when they get suicidal thoughts?",
+  "How can someone be saved from addictions?",
 ];
 
 export default function QuestionInput({
@@ -242,7 +242,7 @@ export default function QuestionInput({
 
       {/* Example question cards */}
       <div className="mt-6 grid grid-cols-1 gap-3 max-w-xl mx-auto">
-        {EXAMPLE_QUESTIONS.slice(0, 3).map((eq, i) => {
+        {EXAMPLE_QUESTIONS.map((eq, i) => {
           const accents = ["var(--krishna-blue)", "var(--gold)", "var(--vermillion)"];
           return (
             <button
