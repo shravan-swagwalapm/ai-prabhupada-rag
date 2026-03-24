@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * Stylized line-art of Srila Prabhupada on his morning walk.
+ * Stylized line-art of Srila Prabhupada on his morning walk — SIDE PROFILE.
+ * Walking to the right with cane, flowing saffron robes, shaved head, glasses.
  * Gold (#C9A84C) strokes on transparent background.
- * Two variants: "hero" (full walking figure) and "logo" (head portrait in circle).
+ * Two variants: "hero" (full walking figure) and "logo" (head profile in circle).
  *
  * NOTE: Uses hardcoded hex colors (not CSS vars) because var() is unreliable
  * inside SVG presentation attributes and gradient stops.
@@ -11,7 +12,6 @@
 
 const GOLD = "#C9A84C";
 const GOLD_DIM = "#8B7332";
-const GOLD_FAINT = "rgba(201,168,76,0.35)";
 
 interface Props {
   variant?: "hero" | "logo";
@@ -20,6 +20,7 @@ interface Props {
 
 export default function PrabhupadaWalkingSVG({ variant = "hero", className = "" }: Props) {
   if (variant === "logo") {
+    // Side-profile head in a circle
     return (
       <svg
         viewBox="0 0 64 64"
@@ -30,38 +31,62 @@ export default function PrabhupadaWalkingSVG({ variant = "hero", className = "" 
         role="img"
         aria-label="Prabhupada AI"
       >
-        {/* Gold ring border */}
+        {/* Gold ring */}
         <circle cx="32" cy="32" r="30" stroke={GOLD} strokeWidth="2" fill="none" />
 
-        {/* Head */}
-        <ellipse cx="32" cy="24" rx="9" ry="10" stroke={GOLD} strokeWidth="1.6" fill="none" />
+        {/* Side-profile head facing right */}
+        {/* Back of skull */}
+        <path
+          d="M22 30 Q20 18 27 12 Q33 8 38 14"
+          stroke={GOLD} strokeWidth="1.6" fill="none" strokeLinecap="round"
+        />
+        {/* Top of head to forehead */}
+        <path
+          d="M38 14 Q42 18 42 24"
+          stroke={GOLD} strokeWidth="1.6" fill="none" strokeLinecap="round"
+        />
+        {/* Forehead → nose (prominent) */}
+        <path
+          d="M42 24 L42 28 L46 32 L43 34"
+          stroke={GOLD} strokeWidth="1.6" fill="none" strokeLinecap="round"
+        />
+        {/* Lips → chin → jaw */}
+        <path
+          d="M43 34 L42 36 Q39 40 34 42 Q28 42 24 38 L22 30"
+          stroke={GOLD} strokeWidth="1.6" fill="none" strokeLinecap="round"
+        />
 
         {/* Tilak */}
-        <path d="M32 17 L30.8 22 L33.2 22 Z" fill={GOLD} opacity="0.5" />
+        <path d="M40 15 L39 23" stroke={GOLD} strokeWidth="1" fill="none" opacity="0.45" strokeLinecap="round" />
 
-        {/* Sikha */}
-        <path d="M32 14 Q34 10 33 7" stroke={GOLD} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+        {/* Sikha curling back */}
+        <path d="M25 13 Q22 8 23 5" stroke={GOLD} strokeWidth="1.1" fill="none" strokeLinecap="round" />
 
-        {/* Glasses */}
-        <circle cx="29" cy="24" r="2.8" stroke={GOLD_DIM} strokeWidth="0.9" fill="none" />
-        <circle cx="36" cy="24" r="2.8" stroke={GOLD_DIM} strokeWidth="0.9" fill="none" />
-        <line x1="31.8" y1="24" x2="33.2" y2="24" stroke={GOLD_DIM} strokeWidth="0.7" />
+        {/* Glasses — single lens in profile */}
+        <circle cx="41" cy="27" r="3.2" stroke={GOLD_DIM} strokeWidth="0.9" fill="none" />
+        {/* Temple arm */}
+        <path d="M38 27 Q30 26 24 28" stroke={GOLD_DIM} strokeWidth="0.7" fill="none" />
 
-        {/* Shoulders / robe neckline */}
-        <path d="M22 44 Q27 37 32 35 Q37 37 42 44" stroke={GOLD} strokeWidth="1.5" fill="none" />
+        {/* Ear */}
+        <path d="M23 27 Q21 30 23 33" stroke={GOLD} strokeWidth="0.8" fill="none" />
 
-        {/* Robe drape lines */}
-        <path d="M22 44 L19 60" stroke={GOLD} strokeWidth="1.3" fill="none" />
-        <path d="M42 44 L45 60" stroke={GOLD} strokeWidth="1.3" fill="none" />
-        <path d="M32 35 L32 56" stroke={GOLD} strokeWidth="0.7" fill="none" opacity="0.3" />
+        {/* Neck + shoulder hint */}
+        <path d="M30 42 L28 50" stroke={GOLD} strokeWidth="1.2" fill="none" />
+        <path d="M36 42 L40 50" stroke={GOLD} strokeWidth="1.2" fill="none" />
+        <path d="M18 56 Q28 48 40 50 Q46 52 48 56" stroke={GOLD} strokeWidth="1.3" fill="none" />
+
+        {/* Robe drape */}
+        <path d="M18 56 L16 62" stroke={GOLD} strokeWidth="1" fill="none" />
+        <path d="M48 56 L50 62" stroke={GOLD} strokeWidth="1" fill="none" />
       </svg>
     );
   }
 
-  // Hero variant — full walking figure
+  // Hero variant — SIDE-PROFILE walking figure, facing right
+  // Narrow body (side view), pronounced walking stride, robe flowing back
   return (
     <svg
-      viewBox="0 0 200 300"
+      viewBox="0 0 160 320"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
@@ -70,7 +95,6 @@ export default function PrabhupadaWalkingSVG({ variant = "hero", className = "" 
       aria-label="Srila Prabhupada on his morning walk"
     >
       <defs>
-        {/* Vertical fade for feet */}
         <linearGradient id="walk-fade" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={GOLD} stopOpacity="1" />
           <stop offset="80%" stopColor={GOLD} stopOpacity="0.9" />
@@ -84,78 +108,113 @@ export default function PrabhupadaWalkingSVG({ variant = "hero", className = "" 
       </defs>
 
       <g strokeLinecap="round" strokeLinejoin="round">
-        {/* ── Head ── */}
-        <ellipse cx="100" cy="35" rx="15" ry="17" stroke="url(#walk-fade)" strokeWidth="2.2" fill="none" />
+
+        {/* ── HEAD (side profile, facing right) ── */}
+        {/* Back of skull */}
+        <path
+          d="M52 44 Q48 24 58 14 Q66 6 74 14 Q80 20 80 30"
+          stroke="url(#walk-fade)" strokeWidth="2.2" fill="none"
+        />
+        {/* Forehead → prominent nose → lips → chin */}
+        <path
+          d="M80 30 L81 38 L88 44 L84 48 L83 50 Q78 56 70 58"
+          stroke="url(#walk-fade)" strokeWidth="2.2" fill="none"
+        />
+        {/* Jawline wrapping back */}
+        <path
+          d="M70 58 Q60 58 54 50 L52 44"
+          stroke="url(#walk-fade)" strokeWidth="2.2" fill="none"
+        />
 
         {/* Tilak */}
-        <path d="M100 22 L98 30 L102 30 Z" fill={GOLD} opacity="0.4" />
+        <path d="M76 16 L74 28" stroke={GOLD} strokeWidth="1.3" fill="none" opacity="0.4" />
 
-        {/* Sikha (tuft) */}
-        <path d="M100 18 Q103 12 101 6" stroke="url(#walk-fade)" strokeWidth="1.5" fill="none" />
+        {/* Sikha curling back from crown */}
+        <path d="M56 16 Q50 8 52 2" stroke="url(#walk-fade)" strokeWidth="1.4" fill="none" />
 
-        {/* Glasses */}
-        <ellipse cx="95" cy="34" rx="4.5" ry="4" stroke="url(#walk-fade-dim)" strokeWidth="1.1" fill="none" />
-        <ellipse cx="107" cy="34" rx="4.5" ry="4" stroke="url(#walk-fade-dim)" strokeWidth="1.1" fill="none" />
-        <line x1="99.5" y1="34" x2="102.5" y2="34" stroke={GOLD_DIM} strokeWidth="0.8" />
-        {/* Ear hooks */}
-        <path d="M90.5 34 Q88 33 87 36" stroke={GOLD_DIM} strokeWidth="0.7" fill="none" />
-        <path d="M111.5 34 Q114 33 115 36" stroke={GOLD_DIM} strokeWidth="0.7" fill="none" />
+        {/* Glasses — one lens visible in profile */}
+        <ellipse cx="79" cy="36" rx="5.5" ry="4.5" stroke="url(#walk-fade-dim)" strokeWidth="1.1" fill="none" />
+        {/* Temple arm running back */}
+        <path d="M74 36 Q62 34 54 38" stroke={GOLD_DIM} strokeWidth="0.8" fill="none" />
 
-        {/* Nose hint */}
-        <path d="M100 33 Q98 37 100 39" stroke={GOLD} strokeWidth="0.8" fill="none" />
+        {/* Ear */}
+        <path d="M53 36 Q50 40 53 44" stroke={GOLD} strokeWidth="1" fill="none" />
 
-        {/* ── Neck ── */}
-        <line x1="95" y1="51" x2="93" y2="62" stroke={GOLD} strokeWidth="1.6" />
-        <line x1="105" y1="51" x2="107" y2="62" stroke={GOLD} strokeWidth="1.6" />
+        {/* ── NECK (slight forward lean — walking posture) ── */}
+        <path d="M64 58 L62 70" stroke={GOLD} strokeWidth="1.6" fill="none" />
+        <path d="M72 58 L76 70" stroke={GOLD} strokeWidth="1.6" fill="none" />
 
-        {/* ── Shoulders ── */}
-        <path d="M72 72 Q92 62 100 64 Q108 62 128 72" stroke={GOLD} strokeWidth="2" fill="none" />
+        {/* ── TORSO — narrow side view, leaning forward (walking) ── */}
+        {/* Back line — curves forward showing walking lean */}
+        <path
+          d="M56 76 Q50 110 46 150 Q42 190 38 225"
+          stroke="url(#walk-fade)" strokeWidth="2" fill="none"
+        />
+        {/* Front line */}
+        <path
+          d="M82 76 Q82 110 80 150 Q78 190 76 225"
+          stroke="url(#walk-fade)" strokeWidth="2" fill="none"
+        />
 
-        {/* ── Chadar (shawl) — left drape ── */}
-        <path d="M72 72 Q70 110 73 155 Q75 190 72 230" stroke="url(#walk-fade)" strokeWidth="2" fill="none" />
-        {/* Inner fold */}
-        <path d="M77 76 Q75 120 78 165 Q79 200 77 240" stroke={GOLD} strokeWidth="1" fill="none" opacity="0.35" />
+        {/* Shoulder line (narrow, side view) */}
+        <path d="M56 76 Q64 70 76 70 Q80 72 82 76" stroke={GOLD} strokeWidth="1.8" fill="none" />
 
-        {/* ── Right side of robe ── */}
-        <path d="M128 72 Q130 110 127 155 Q125 200 128 245" stroke="url(#walk-fade)" strokeWidth="2" fill="none" />
+        {/* Chadar draped — flowing behind and billowing */}
+        <path
+          d="M56 76 Q44 86 34 108 Q24 136 20 170"
+          stroke={GOLD} strokeWidth="1.6" fill="none" opacity="0.55"
+        />
+        <path
+          d="M20 170 Q18 200 22 230 Q24 245 20 260"
+          stroke={GOLD} strokeWidth="1.3" fill="none" opacity="0.35"
+        />
+        {/* Second chadar fold */}
+        <path
+          d="M58 80 Q48 92 40 115 Q32 145 28 178"
+          stroke={GOLD} strokeWidth="0.8" fill="none" opacity="0.25"
+        />
 
-        {/* ── Central fold ── */}
-        <path d="M100 64 Q99 130 101 200 Q102 240 100 270" stroke={GOLD} strokeWidth="0.8" fill="none" opacity="0.2" />
+        {/* Robe fold lines */}
+        <path d="M54 100 Q66 98 80 100" stroke={GOLD} strokeWidth="0.6" fill="none" opacity="0.25" />
+        <path d="M50 135 Q64 132 80 135" stroke={GOLD} strokeWidth="0.6" fill="none" opacity="0.2" />
+        <path d="M46 170 Q62 166 78 170" stroke={GOLD} strokeWidth="0.6" fill="none" opacity="0.18" />
+        <path d="M42 205 Q58 200 76 205" stroke={GOLD} strokeWidth="0.6" fill="none" opacity="0.15" />
 
-        {/* ── Horizontal dhoti folds ── */}
-        <path d="M76 120 Q100 116 124 120" stroke={GOLD} strokeWidth="0.7" fill="none" opacity="0.3" />
-        <path d="M74 160 Q100 155 126 160" stroke={GOLD} strokeWidth="0.7" fill="none" opacity="0.25" />
-        <path d="M73 200 Q100 195 127 200" stroke={GOLD} strokeWidth="0.7" fill="none" opacity="0.2" />
+        {/* ── RIGHT ARM — forward, holding cane ── */}
+        <path d="M82 76 Q92 92 96 108 Q98 116 96 120" stroke={GOLD} strokeWidth="1.6" fill="none" />
+        {/* Hand gripping cane */}
+        <path d="M96 120 Q94 124 97 126" stroke={GOLD} strokeWidth="1.1" fill="none" />
 
-        {/* ── Walking cane (right hand) ── */}
-        <line x1="130" y1="82" x2="142" y2="275" stroke="url(#walk-fade)" strokeWidth="2.5" />
-        {/* Cane handle */}
-        <path d="M129 78 Q132 74 135 78 Q136 80 133 84" stroke={GOLD} strokeWidth="1.5" fill="none" />
+        {/* ── WALKING CANE — angled well forward ── */}
+        <line x1="96" y1="122" x2="128" y2="292" stroke="url(#walk-fade)" strokeWidth="2.5" />
+        {/* Curved handle */}
+        <path d="M94 116 Q98 112 101 116" stroke={GOLD} strokeWidth="1.4" fill="none" />
 
-        {/* ── Right arm (holding cane) ── */}
-        <path d="M128 72 Q133 78 130 82" stroke={GOLD} strokeWidth="1.6" fill="none" />
+        {/* ── LEFT ARM — behind body, relaxed swing ── */}
+        <path d="M56 76 Q48 92 44 108" stroke={GOLD} strokeWidth="1.4" fill="none" opacity="0.6" />
+        <path d="M44 108 Q42 112 44 114" stroke={GOLD} strokeWidth="0.9" fill="none" opacity="0.5" />
 
-        {/* ── Left arm (relaxed) ── */}
-        <path d="M72 72 Q64 92 60 110 Q58 118 62 122" stroke={GOLD} strokeWidth="1.6" fill="none" />
-        {/* Left hand */}
-        <path d="M62 122 Q60 126 63 128" stroke={GOLD} strokeWidth="1.1" fill="none" />
+        {/* ── DHOTI BOTTOM — flowing scalloped edge ── */}
+        <path d="M38 225 Q48 238 58 228" stroke={GOLD} strokeWidth="1.2" fill="none" opacity="0.5" />
+        <path d="M66 228 Q72 236 76 230" stroke={GOLD} strokeWidth="1.2" fill="none" opacity="0.45" />
+        {/* Flowing dhoti tail billowing behind */}
+        <path d="M38 225 Q30 234 24 250 Q20 260 18 272" stroke={GOLD} strokeWidth="1.1" fill="none" opacity="0.3" />
 
-        {/* ── Legs (mid-stride) ── */}
-        {/* Left leg forward */}
-        <path d="M90 235 Q85 255 78 278" stroke="url(#walk-fade)" strokeWidth="1.6" fill="none" />
-        <path d="M78 278 Q74 282 71 281" stroke={GOLD} strokeWidth="1.3" fill="none" opacity="0.4" />
+        {/* ── LEGS — wide walking stride ── */}
+        {/* Front leg — stepping well forward (right) */}
+        <path d="M66 228 Q82 255 100 278" stroke="url(#walk-fade)" strokeWidth="1.8" fill="none" />
+        {/* Front foot / sandal */}
+        <path d="M100 278 Q105 282 110 280" stroke={GOLD} strokeWidth="1.3" fill="none" opacity="0.5" />
 
-        {/* Right leg back */}
-        <path d="M110 235 Q115 255 122 273" stroke="url(#walk-fade)" strokeWidth="1.6" fill="none" />
-        <path d="M122 273 Q126 277 129 276" stroke={GOLD} strokeWidth="1.3" fill="none" opacity="0.4" />
+        {/* Back leg — pushing off well behind (left) */}
+        <path d="M50 228 Q38 258 28 280" stroke="url(#walk-fade)" strokeWidth="1.6" fill="none" />
+        {/* Back foot */}
+        <path d="M28 280 Q24 284 20 282" stroke={GOLD} strokeWidth="1.2" fill="none" opacity="0.4" />
 
-        {/* ── Dhoti bottom edge ── */}
-        <path d="M72 230 Q80 242 90 235" stroke={GOLD} strokeWidth="1.3" fill="none" opacity="0.5" />
-        <path d="M110 235 Q120 242 128 245" stroke={GOLD} strokeWidth="1.3" fill="none" opacity="0.5" />
       </g>
 
-      {/* Ground shadow */}
-      <ellipse cx="102" cy="288" rx="38" ry="4" fill={GOLD} opacity="0.06" />
+      {/* Ground shadow — elongated, matching wide stride */}
+      <ellipse cx="68" cy="292" rx="52" ry="3.5" fill={GOLD} opacity="0.06" />
     </svg>
   );
 }
