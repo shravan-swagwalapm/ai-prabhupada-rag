@@ -6,6 +6,7 @@ import { useAuth } from "@/components/AuthProvider";
 import QuestionInput from "@/components/QuestionInput";
 import AnswerTabs from "@/components/AnswerTabs";
 import FontSizeToggle from "@/components/FontSizeToggle";
+import PrabhupadaWalkingSVG from "@/components/PrabhupadaWalkingSVG";
 import SubscribeGate from "@/components/SubscribeGate";
 import ShareBar from "@/components/ShareBar";
 import LotusWatermark from "@/components/LotusWatermark";
@@ -144,19 +145,7 @@ export default function Home() {
         <div className="max-w-3xl mx-auto flex items-center justify-between px-5 py-3">
         {/* Logo / brand */}
         <div className="flex items-center gap-2.5">
-          <img
-            src="/prabhupada-walking.webp"
-            alt="Srila Prabhupada"
-            className="rounded-full prabhupada-walk"
-            style={{
-              width: 38,
-              height: 38,
-              objectFit: "cover",
-              objectPosition: "25% 10%",
-              border: "2px solid var(--gold)",
-              boxShadow: "0 0 8px rgba(201,168,76,0.2)",
-            }}
-          />
+          <PrabhupadaWalkingSVG variant="logo" className="prabhupada-walk shrink-0" />
           <span
             className="text-lg font-bold font-serif"
             style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
