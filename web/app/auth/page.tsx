@@ -79,7 +79,7 @@ export default function AuthPage() {
           className="absolute inset-0 pointer-events-none"
           style={{
             background:
-              "radial-gradient(ellipse at center, rgba(201,168,76,0.04) 0%, transparent 70%)",
+              "radial-gradient(ellipse at center, rgba(26,58,107,0.03) 0%, transparent 70%)",
           }}
         />
 
@@ -89,7 +89,7 @@ export default function AuthPage() {
             className="absolute rounded-full"
             style={{
               width: 120, height: 120,
-              border: "1px solid rgba(201,168,76,0.15)",
+              border: "1px solid rgba(26,58,107,0.08)",
               animation: "pulse-ring 3s ease-in-out infinite",
               animationDelay: "0.6s",
             }}
@@ -98,7 +98,7 @@ export default function AuthPage() {
             className="absolute rounded-full"
             style={{
               width: 88, height: 88,
-              border: "1px solid rgba(201,168,76,0.25)",
+              border: "1px solid rgba(26,58,107,0.12)",
               animation: "pulse-ring 3s ease-in-out infinite",
               animationDelay: "0.3s",
             }}
@@ -107,7 +107,7 @@ export default function AuthPage() {
             className="absolute rounded-full"
             style={{
               width: 60, height: 60,
-              border: "1px solid rgba(201,168,76,0.4)",
+              border: "1px solid rgba(26,58,107,0.2)",
               animation: "pulse-ring 3s ease-in-out infinite",
             }}
           />
@@ -256,8 +256,8 @@ export default function AuthPage() {
                 background: "var(--glass)",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(201,168,76,0.2)";
-                e.currentTarget.style.background = "rgba(22,16,9,0.8)";
+                e.currentTarget.style.borderColor = "#C4B89C";
+                e.currentTarget.style.background = "rgba(255,255,255,0.8)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = "var(--glass-border)";
@@ -314,7 +314,7 @@ export default function AuthPage() {
                 background: "var(--glass)",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "rgba(201,168,76,0.2)";
+                e.currentTarget.style.borderColor = "#C4B89C";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = "var(--glass-border)";
@@ -374,22 +374,25 @@ export default function AuthPage() {
           {EXAMPLE_QUESTIONS.map((q, i) => (
             <div
               key={i}
-              className="rounded-xl px-6 py-5 transition-all duration-200"
+              className="rounded-xl transition-all duration-200"
               style={{
-                borderLeft: "3px solid rgba(224,112,80,0.4)",
-                background: "linear-gradient(to right, rgba(22,16,9,0.8), rgba(28,21,14,0.3))",
+                background: "var(--bg-card-gradient)",
+                border: "1px solid #D4C9B8",
+                borderLeft: "3.5px solid var(--vermillion)",
+                borderRadius: 14,
+                padding: "18px 20px",
               }}
               onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#C4B89C";
                 e.currentTarget.style.borderLeftColor = "var(--vermillion-bright)";
-                e.currentTarget.style.background = "linear-gradient(to right, rgba(22,16,9,0.95), rgba(28,21,14,0.5))";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderLeftColor = "rgba(224,112,80,0.4)";
-                e.currentTarget.style.background = "linear-gradient(to right, rgba(22,16,9,0.8), rgba(28,21,14,0.3))";
+                e.currentTarget.style.borderColor = "#D4C9B8";
+                e.currentTarget.style.borderLeftColor = "var(--vermillion)";
               }}
             >
               <p
-                className="font-serif italic text-lg leading-relaxed"
+                className="font-serif text-lg leading-relaxed"
                 style={{ color: "var(--text-body)" }}
               >
                 &ldquo;{q}&rdquo;
@@ -442,8 +445,8 @@ export default function AuthPage() {
             <div
               className="inline-flex items-center gap-3 px-4 py-3 rounded-xl"
               style={{
-                border: "1px solid var(--glass-border)",
-                background: "var(--card)",
+                border: "1px solid rgba(250,246,239,0.1)",
+                background: "rgba(250,246,239,0.05)",
               }}
             >
               <div
@@ -486,14 +489,15 @@ export default function AuthPage() {
           <div
             className="rounded-2xl p-8 text-center"
             style={{
-              border: "1px solid rgba(201,168,76,0.15)",
-              background: "linear-gradient(135deg, rgba(22,16,9,0.9), rgba(28,21,14,0.6))",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(201,168,76,0.06)",
+              border: "1px solid rgba(26,58,107,0.2)",
+              background: "linear-gradient(135deg, #1A3A6B, #15305A)",
+              borderRadius: 16,
+              boxShadow: "0 4px 24px rgba(26,58,107,0.2)",
             }}
           >
             <h3
               className="font-serif text-2xl mb-1"
-              style={{ color: "var(--text-primary)" }}
+              style={{ color: "#FAF6EF" }}
             >
               Hare Kṛṣṇa
             </h3>
@@ -502,14 +506,14 @@ export default function AuthPage() {
 
             <p
               className="text-sm mb-2"
-              style={{ color: "var(--text-body)" }}
+              style={{ color: "rgba(250,246,239,0.85)" }}
             >
               5 questions free · 2 voice answers included
             </p>
 
             <p
               className="text-xs mb-6"
-              style={{ color: "var(--text-muted)" }}
+              style={{ color: "rgba(250,246,239,0.5)" }}
             >
               No credit card required
             </p>
