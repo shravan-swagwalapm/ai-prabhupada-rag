@@ -57,7 +57,7 @@ def main():
                 "scripture": r["scripture"],
                 "text": r["text"],
                 "similarity": round(r["similarity"], 4),
-                "chunk_id": r.get("chunk_id", ""),
+                "chunk_id": str(r.get("chunk_id", "")),
             }
             for r in results
         ]
