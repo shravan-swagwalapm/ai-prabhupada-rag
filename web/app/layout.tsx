@@ -3,14 +3,14 @@ import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Prabhupada — Vedic Wisdom",
+  title: "Prabhupada AI — Vedic Wisdom",
   description:
     "Receive scripture-grounded answers in Srila Prabhupada's voice — drawn from 161,000 passages across his complete works",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "AI Prabhupada",
+    title: "Prabhupada AI",
   },
 };
 

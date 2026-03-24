@@ -143,21 +143,25 @@ export default function Home() {
       >
         <div className="max-w-3xl mx-auto flex items-center justify-between px-5 py-3">
         {/* Logo / brand */}
-        <div className="flex items-center gap-3">
-          <div
-            className="w-[38px] h-[38px] flex items-center justify-center"
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/prabhupada-walking.webp"
+            alt="Srila Prabhupada"
+            className="rounded-full prabhupada-walk"
             style={{
-              background: "linear-gradient(135deg, #1A3A6B, #2A5298)",
-              borderRadius: 12,
+              width: 38,
+              height: 38,
+              objectFit: "cover",
+              objectPosition: "25% 10%",
+              border: "2px solid var(--gold)",
+              boxShadow: "0 0 8px rgba(201,168,76,0.2)",
             }}
-          >
-            <span className="text-base">🙏</span>
-          </div>
+          />
           <span
             className="text-lg font-bold font-serif"
             style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
           >
-            AI Prabhupada
+            Prabhupada AI
           </span>
         </div>
 

@@ -200,6 +200,36 @@ textarea:focus {
   transform: scale(1.04);
 }
 
+/* Walking Prabhupada — gentle morning walk drift */
+@keyframes morning-walk {
+  0%   { transform: translateX(0) translateY(0); }
+  25%  { transform: translateX(3px) translateY(-1px); }
+  50%  { transform: translateX(0) translateY(0); }
+  75%  { transform: translateX(-3px) translateY(-1px); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+@keyframes golden-aura {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 0.7; transform: scale(1.05); }
+}
+
+.prabhupada-walk {
+  animation: morning-walk 6s ease-in-out infinite;
+}
+
+.prabhupada-aura {
+  animation: golden-aura 4s ease-in-out infinite;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .prabhupada-walk,
+  .prabhupada-aura {
+    animation: none;
+  }
+}
+
 /* Warm skeleton shimmer */
 @keyframes warm-shimmer {
   0% { background-position: -200% 0; }

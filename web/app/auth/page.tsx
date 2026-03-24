@@ -83,39 +83,28 @@ export default function AuthPage() {
           }}
         />
 
-        {/* Pulsing rings */}
-        <div className="relative flex items-center justify-center mb-4 sm:mb-8">
+        {/* Walking Prabhupada — hero image */}
+        <div className="relative flex items-center justify-center mb-4 sm:mb-6">
+          {/* Golden aura behind the image */}
           <div
-            className="absolute rounded-full"
+            className="absolute prabhupada-aura rounded-full"
             style={{
-              width: 90, height: 90,
-              border: "1px solid rgba(26,58,107,0.08)",
-              animation: "pulse-ring 3s ease-in-out infinite",
-              animationDelay: "0.6s",
+              width: 200,
+              height: 200,
+              background: "radial-gradient(circle, rgba(201,168,76,0.15) 0%, rgba(201,168,76,0.04) 50%, transparent 70%)",
             }}
           />
-          <div
-            className="absolute rounded-full"
+          <img
+            src="/prabhupada-walking.webp"
+            alt="Srila Prabhupada on his morning walk"
+            className="relative prabhupada-walk"
             style={{
-              width: 66, height: 66,
-              border: "1px solid rgba(26,58,107,0.12)",
-              animation: "pulse-ring 3s ease-in-out infinite",
-              animationDelay: "0.3s",
-            }}
-          />
-          <div
-            className="absolute rounded-full"
-            style={{
-              width: 44, height: 44,
-              border: "1px solid rgba(26,58,107,0.2)",
-              animation: "pulse-ring 3s ease-in-out infinite",
-            }}
-          />
-          <div
-            className="relative w-5 h-5 rounded-full"
-            style={{
-              background: "radial-gradient(circle, var(--gold-bright) 0%, var(--gold-dim) 100%)",
-              boxShadow: "0 0 12px rgba(201,168,76,0.5)",
+              height: 180,
+              width: "auto",
+              objectFit: "contain",
+              filter: "drop-shadow(0 4px 20px rgba(26,58,107,0.12))",
+              maskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
+              WebkitMaskImage: "linear-gradient(to bottom, black 70%, transparent 100%)",
             }}
           />
         </div>
