@@ -121,8 +121,8 @@ export default function QuestionInput({
             boxShadow: "var(--shadow-search), inset 0 1px 0 rgba(255,255,255,0.9)",
             color: "var(--text-primary)",
             outline: "none",
-            padding: "14px 80px 14px 22px",
-            fontSize: 17,
+            padding: "14px 120px 14px 22px",
+            fontSize: "17px",
             lineHeight: 1.5,
           }}
           onFocus={(e) => {
@@ -137,7 +137,7 @@ export default function QuestionInput({
           }}
         />
         {/* Placeholder colour handled via inline style workaround in globals */}
-        <div className="absolute right-4 bottom-4 flex items-center gap-2">
+        <div className="absolute flex items-center gap-2" style={{ right: 12, top: "50%", transform: "translateY(-50%)" }}>
           {/* Mic button (only if browser supports Web Speech API) */}
           {speechSupported && (
             <button

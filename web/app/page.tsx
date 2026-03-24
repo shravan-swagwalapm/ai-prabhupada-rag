@@ -155,10 +155,10 @@ export default function Home() {
             <img
               src="/prabhupada-walking.png"
               alt="Prabhupada AI"
-              className="shrink-0 rounded-full"
-              width={38}
+              className="shrink-0"
+              width={24}
               height={38}
-              style={{ height: 38, width: 38, objectFit: "cover", border: "2px solid var(--glass-border-hover)" }}
+              style={{ height: 38, width: "auto", objectFit: "contain" }}
             />
           </picture>
           <span
