@@ -49,7 +49,7 @@ export default function AnswerTabs({
       {/* Tab bar */}
       <div
         className="flex gap-0 mb-6 max-w-xs"
-        style={{ borderBottom: "1px solid var(--glass-border)" }}
+        style={{ borderBottom: "1px solid #D4C9B8" }}
       >
         <button
           onClick={() => setActiveTab("answer")}
@@ -65,8 +65,8 @@ export default function AnswerTabs({
           Answer
           {activeTab === "answer" && (
             <span
-              className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-              style={{ background: "linear-gradient(to right, var(--gold-dim), var(--gold), var(--gold-dim))" }}
+              className="absolute bottom-0 left-0 right-0 rounded-full"
+              style={{ background: "#1A3A6B", height: "2.5px" }}
             />
           )}
         </button>
@@ -84,8 +84,8 @@ export default function AnswerTabs({
           Sources{passages.length > 0 ? ` (${passages.length})` : ""}
           {activeTab === "sources" && (
             <span
-              className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-              style={{ background: "linear-gradient(to right, var(--gold-dim), var(--gold), var(--gold-dim))" }}
+              className="absolute bottom-0 left-0 right-0 rounded-full"
+              style={{ background: "#1A3A6B", height: "2.5px" }}
             />
           )}
         </button>

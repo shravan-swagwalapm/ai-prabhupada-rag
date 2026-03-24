@@ -578,7 +578,8 @@ export default function RichAnswer({ text, mode = "text", isStreaming }: Props) 
                 className="text-2xl font-serif pt-3 pb-2"
                 style={{
                   color: "var(--text-primary)",
-                  borderBottom: "1px solid rgba(201,168,76,0.2)",
+                  borderBottom: "1px solid #D4C9B8",
+                  letterSpacing: "-0.02em",
                 }}
               >
                 {block.text}
@@ -589,7 +590,7 @@ export default function RichAnswer({ text, mode = "text", isStreaming }: Props) 
               <h3
                 key={i}
                 className="text-xl font-serif pt-5 pb-1 flex items-center gap-3"
-                style={{ color: "var(--text-primary)" }}
+                style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
               >
                 <span
                   className="w-1 h-6 rounded-full inline-block shrink-0"
@@ -603,7 +604,7 @@ export default function RichAnswer({ text, mode = "text", isStreaming }: Props) 
               <h4
                 key={i}
                 className="text-lg font-serif pt-3 font-medium"
-                style={{ color: "var(--text-body)" }}
+                style={{ color: "var(--text-body)", letterSpacing: "-0.02em" }}
               >
                 {block.text}
               </h4>
@@ -612,43 +613,35 @@ export default function RichAnswer({ text, mode = "text", isStreaming }: Props) 
             return (
               <div
                 key={i}
-                className="verse-card my-6 rounded-xl overflow-hidden"
+                className="my-6 overflow-hidden"
                 style={{
-                  border: "1px solid rgba(224,112,80,0.25)",
-                  background: "linear-gradient(135deg, rgba(22,16,9,0.9), rgba(28,21,14,0.6))",
-                  boxShadow: "0 2px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(224,112,80,0.08)",
+                  borderLeft: "3px solid #C9A84C",
+                  background: "rgba(201,168,76,0.03)",
+                  borderRadius: "0 12px 12px 0",
+                  padding: "14px 18px",
                 }}
               >
-                {/* Decorative top bar */}
-                <div
-                  style={{
-                    height: 2,
-                    background: "linear-gradient(to right, transparent, var(--vermillion-bright), var(--gold-dim), var(--vermillion-bright), transparent)",
-                    opacity: 0.5,
-                  }}
-                />
-                <div className="px-6 py-5 text-center space-y-3">
-                  {/* Sanskrit verse lines */}
+                <div className="space-y-3">
                   {block.lines.length > 0 && (
                     <div className="space-y-1">
                       {block.lines.map((line, j) => (
                         <p
                           key={j}
-                          className="font-serif italic leading-relaxed text-base"
-                          style={{ color: "var(--vermillion-bright)" }}
+                          className="font-serif italic"
+                          style={{ color: "#c75b39", fontSize: 15 }}
                         >
                           {line}
                         </p>
                       ))}
                     </div>
                   )}
-                  {/* English translation */}
                   {block.translation && (
                     <p
-                      className="font-serif leading-relaxed text-base pt-2"
+                      className="font-sans"
                       style={{
-                        color: "var(--text-primary)",
+                        color: "#2C4A78",
                         fontWeight: 600,
+                        fontSize: 14,
                         borderTop: block.lines.length > 0 ? "1px solid rgba(201,168,76,0.15)" : undefined,
                         paddingTop: block.lines.length > 0 ? "0.75rem" : undefined,
                       }}
@@ -656,11 +649,10 @@ export default function RichAnswer({ text, mode = "text", isStreaming }: Props) 
                       &ldquo;{block.translation}&rdquo;
                     </p>
                   )}
-                  {/* Verse reference */}
                   {block.ref && (
                     <p
-                      className="text-xs font-sans uppercase tracking-widest pt-1"
-                      style={{ color: "var(--gold-dim)" }}
+                      className="text-xs font-sans uppercase tracking-widest"
+                      style={{ color: "#8B7332" }}
                     >
                       {block.ref}
                     </p>
@@ -703,8 +695,8 @@ export default function RichAnswer({ text, mode = "text", isStreaming }: Props) 
                       style={{ background: "var(--gold-dim)" }}
                     />
                     <span
-                      className="font-serif leading-[2.0] text-base"
-                      style={{ color: "var(--text-body)" }}
+                      className="font-sans"
+                      style={{ color: "var(--text-body)", fontSize: 18, fontWeight: 450, lineHeight: 1.75 }}
                     >
                       {renderInlineText(item)}
                     </span>
@@ -716,8 +708,14 @@ export default function RichAnswer({ text, mode = "text", isStreaming }: Props) 
             return (
               <p
                 key={i}
-                className="font-serif leading-[2.0] text-base"
-                style={{ color: "var(--text-body)" }}
+                className="font-sans"
+                style={{
+                  color: "var(--text-body)",
+                  fontSize: 18,
+                  fontWeight: 450,
+                  lineHeight: 1.75,
+                  marginBottom: 18,
+                }}
               >
                 {renderInlineText(block.text)}
               </p>
