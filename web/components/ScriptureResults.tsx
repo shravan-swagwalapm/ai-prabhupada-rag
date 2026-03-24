@@ -73,16 +73,16 @@ export default function ScriptureResults({ passages, isLoading }: Props) {
               key={`${p.scripture}-${p.chunk_id || i}`}
               className="group p-5 rounded-xl transition-all duration-200"
               style={{
-                border: "1px solid var(--glass-border)",
-                background: "var(--card)",
+                border: "1px solid #D4C9B8",
+                background: "var(--bg-card-gradient)",
+                borderRadius: 14,
+                boxShadow: "0 1px 3px rgba(26,58,107,0.04), 0 1px 2px rgba(0,0,0,0.03)",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = "var(--glass-border-hover)";
-                (e.currentTarget as HTMLElement).style.background = "var(--card-hover)";
+                (e.currentTarget as HTMLElement).style.borderColor = "#C4B89C";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = "var(--glass-border)";
-                (e.currentTarget as HTMLElement).style.background = "var(--card)";
+                (e.currentTarget as HTMLElement).style.borderColor = "#D4C9B8";
               }}
             >
               {/* Header row */}

@@ -67,11 +67,11 @@ export default function HistoryPage() {
           <button
             onClick={() => router.push("/")}
             className="p-2 rounded-lg transition-colors"
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(201, 168, 76, 0.1)")}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(26,58,107,0.06)")}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
             aria-label="Back"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "var(--gold)" }}>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "var(--text-primary)" }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
@@ -98,9 +98,9 @@ export default function HistoryPage() {
             <button
               onClick={() => router.push("/")}
               className="mt-4 px-6 py-2 rounded-full text-white font-sans text-sm transition-colors"
-              style={{ backgroundColor: "var(--gold)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--gold-bright)")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--gold)")}
+              style={{ backgroundColor: "#1A3A6B" }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#2A5298")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1A3A6B")}
             >
               Ask your first question
             </button>
@@ -119,7 +119,13 @@ export default function HistoryPage() {
               return (
                 <div
                   key={entry.id}
-                  className="rounded-xl border border-[var(--glass-border)] bg-[var(--card)] overflow-hidden"
+                  className="overflow-hidden"
+                  style={{
+                    border: "1px solid #D4C9B8",
+                    background: "var(--bg-card-gradient)",
+                    borderRadius: 14,
+                    boxShadow: "0 1px 3px rgba(26,58,107,0.04), 0 1px 2px rgba(0,0,0,0.03)",
+                  }}
                 >
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : entry.id)}
@@ -147,7 +153,7 @@ export default function HistoryPage() {
                   </button>
 
                   {isExpanded && (
-                    <div className="px-4 pb-5 border-t border-[var(--glass-border)]">
+                    <div className="px-4 pb-5" style={{ borderTop: "1px solid #D4C9B8" }}>
                       <div className="pt-4">
                         <RichAnswer
                           text={entry.answer_text}
