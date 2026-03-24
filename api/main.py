@@ -482,12 +482,9 @@ async def query_scriptures(
     5. ElevenLabs voice synthesis in background
     6. Decrement quota + save to history
     """
-    if _search_func is None:
-        raise HTTPException(status_code=503, detail="Search backend not ready")
-
     mode = "voice" if req.include_voice else "text"
 
-    # ── FAQ check (pre-rendered, no quota consumed) ──────────────────────
+    # ── FAQ check (pre-rendered, no quota consumed, no FAISS needed) ─────
     faq_key = req.question.strip().lower()
     faq_entry = _faq_data.get(faq_key)
     if faq_entry:
@@ -501,6 +498,9 @@ async def query_scriptures(
             search_method="faq",
             cached=True,
         )
+
+    if _search_func is None:
+        raise HTTPException(status_code=503, detail="Search backend not ready")
 
     # Quota check — atomic decrement to prevent TOCTOU race
     quota_ok = decrement_quota(user_id, mode)
@@ -661,13 +661,10 @@ async def query_stream(
     Streaming endpoint with auth + quota + semantic cache.
     Streams AI answer word-by-word via SSE.
     """
-    if _search_func is None:
-        raise HTTPException(status_code=503, detail="Search backend not ready")
-
     question = question.strip()
     mode = "voice" if include_voice else "text"
 
-    # ── FAQ check (pre-rendered, no quota consumed) ──────────────────────
+    # ── FAQ check (pre-rendered, no quota consumed, no FAISS needed) ─────
     faq_key = question.strip().lower()
     faq_entry = _faq_data.get(faq_key)
     if faq_entry:
@@ -687,6 +684,10 @@ async def query_stream(
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
         )
+
+    # ── From here on, FAISS is required ──────────────────────────────────
+    if _search_func is None:
+        raise HTTPException(status_code=503, detail="Search backend not ready")
 
     # Quota check — atomic decrement to prevent TOCTOU race
     quota_ok = decrement_quota(user_id, mode)
