@@ -55,7 +55,7 @@ export default function AnswerTabs({
           onClick={() => setActiveTab("answer")}
           className="relative flex-1 px-4 py-2.5 text-sm transition-all duration-200"
           style={{
-            fontFamily: "var(--font-display, 'Cinzel', serif)",
+            fontFamily: "Georgia, serif",
             letterSpacing: "0.04em",
             color: activeTab === "answer" ? "var(--text-primary)" : "var(--text-muted)",
             background: "transparent",
@@ -75,7 +75,7 @@ export default function AnswerTabs({
           onClick={() => setActiveTab("sources")}
           className="relative flex-1 px-4 py-2.5 text-sm transition-all duration-200"
           style={{
-            fontFamily: "var(--font-display, 'Cinzel', serif)",
+            fontFamily: "Georgia, serif",
             letterSpacing: "0.04em",
             color: activeTab === "sources" ? "var(--text-primary)" : "var(--text-muted)",
             background: "transparent",

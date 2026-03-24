@@ -122,8 +122,8 @@ export default function AuthPage() {
 
         {/* Title */}
         <h1
-          className="font-serif font-semibold text-4xl sm:text-5xl text-center tracking-wide leading-tight"
-          style={{ color: "var(--text-primary)" }}
+          className="font-serif font-bold text-4xl sm:text-5xl text-center leading-tight"
+          style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
         >
           Hare Kṛṣṇa
         </h1>
@@ -203,8 +203,8 @@ export default function AuthPage() {
       {/* ── Section 2: How It Works ────────────────────────────────── */}
       <section className="px-4 py-20 max-w-4xl mx-auto">
         <h2
-          className="font-serif text-2xl sm:text-3xl text-center mb-12"
-          style={{ color: "var(--text-primary)" }}
+          className="font-serif font-bold text-2xl sm:text-3xl text-center mb-12"
+          style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
         >
           How it works
         </h2>
@@ -274,8 +274,8 @@ export default function AuthPage() {
                 {item.icon}
               </div>
               <h3
-                className="font-serif text-lg mb-2"
-                style={{ color: "var(--text-primary)" }}
+                className="font-serif font-bold text-lg mb-2"
+                style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
               >
                 {item.title}
               </h3>
@@ -290,8 +290,8 @@ export default function AuthPage() {
       {/* ── Section 3: Scripture Coverage ───────────────────────────── */}
       <section className="px-4 py-20 max-w-4xl mx-auto">
         <h2
-          className="font-serif text-2xl sm:text-3xl text-center mb-3"
-          style={{ color: "var(--text-primary)" }}
+          className="font-serif font-bold text-2xl sm:text-3xl text-center mb-3"
+          style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
         >
           Every word Prabhupada wrote.
           <br />
@@ -364,8 +364,8 @@ export default function AuthPage() {
       {/* ── Section 4: Example Questions ────────────────────────────── */}
       <section className="px-4 py-20 max-w-2xl mx-auto">
         <h2
-          className="font-serif text-2xl sm:text-3xl text-center mb-12"
-          style={{ color: "var(--text-primary)" }}
+          className="font-serif font-bold text-2xl sm:text-3xl text-center mb-12"
+          style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
         >
           What would you ask Prabhupada?
         </h2>
@@ -426,8 +426,8 @@ export default function AuthPage() {
             </div>
 
             <h3
-              className="font-serif text-xl sm:text-2xl mb-3"
-              style={{ color: "var(--text-primary)" }}
+              className="font-serif font-bold text-xl sm:text-2xl mb-3"
+              style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
             >
               Hear Prabhupada&apos;s voice
             </h3>
@@ -496,8 +496,8 @@ export default function AuthPage() {
             }}
           >
             <h3
-              className="font-serif text-2xl mb-1"
-              style={{ color: "#FAF6EF" }}
+              className="font-serif font-bold text-2xl mb-1"
+              style={{ color: "#FAF6EF", letterSpacing: "-0.02em" }}
             >
               Hare Kṛṣṇa
             </h3>

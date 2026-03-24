@@ -133,7 +133,7 @@ export default function Home() {
     >
       {/* Frosted glass header */}
       <header
-        className="w-full max-w-3xl mx-auto flex items-center justify-between mb-8 sm:mb-12 px-5 py-3"
+        className="sticky top-0 z-50 w-full mb-8 sm:mb-12"
         style={{
           background: "rgba(250,246,239,0.85)",
           borderBottom: "1px solid var(--glass-border-hover)",
@@ -141,6 +141,7 @@ export default function Home() {
           WebkitBackdropFilter: "blur(20px)",
         }}
       >
+        <div className="max-w-3xl mx-auto flex items-center justify-between px-5 py-3">
         {/* Logo / brand */}
         <div className="flex items-center gap-3">
           <div
@@ -215,6 +216,7 @@ export default function Home() {
               </div>
             )}
           </button>
+        </div>
         </div>
       </header>
 
@@ -315,7 +317,7 @@ export default function Home() {
           style={{
             background: "rgba(194,77,44,0.1)",
             border: "1px solid rgba(194,77,44,0.3)",
-            color: "var(--vermillion-bright)",
+            color: "var(--text-body)",
           }}
         >
           {streamError}
