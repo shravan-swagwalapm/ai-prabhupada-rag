@@ -10,7 +10,7 @@ export default function AratiDivider() {
           style={{
             width: `${4 * scale}px`,
             height: `${20 * scale}px`,
-            background: 'linear-gradient(to top, #c24d2c, #c9a84c, #f7f0e3)',
+            background: `linear-gradient(to top, var(--vermillion), var(--gold), var(--sanctum))`,
             animation: `arati-flicker 2s ease-in-out infinite alternate`,
             animationDelay: `${i * 0.15}s`,
           }}
