@@ -165,7 +165,7 @@ export default function AuthPage() {
           )}
 
           <p className="text-xs" style={{ color: "var(--text-ghost)" }}>
-            5 questions free · No credit card
+            7 questions free · No credit card
           </p>
         </div>
 
@@ -495,7 +495,7 @@ export default function AuthPage() {
               className="text-sm mb-2"
               style={{ color: "rgba(250,246,239,0.85)" }}
             >
-              5 questions free · 2 voice answers included
+              7 questions free · 5 text + 2 voice
             </p>
 
             <p
