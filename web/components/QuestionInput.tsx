@@ -107,25 +107,31 @@ export default function QuestionInput({
           value={isListening ? "Listening..." : question}
           onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask a spiritual question…"
-          rows={2}
+          placeholder="Ask anything…"
+          rows={1}
           maxLength={500}
           disabled={isLoading || disabled || isListening}
-          className="w-full px-6 py-5 pr-28 rounded-2xl resize-none disabled:opacity-50 transition-all font-serif text-xl"
+          className="w-full resize-none disabled:opacity-50 transition-all font-serif"
           style={{
-            background: "var(--altar)",
-            border: "2px solid var(--glass-border)",
+            background: "#FFFFFF",
+            border: "1px solid #D4C9B8",
+            borderRadius: 22,
+            boxShadow: "0 4px 20px rgba(26,58,107,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
             color: "var(--text-primary)",
             outline: "none",
+            padding: "14px 80px 14px 22px",
+            fontSize: 17,
+            lineHeight: 1.5,
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = "var(--glass-border-hover)";
+            e.currentTarget.style.borderColor = "#C4B89C";
             e.currentTarget.style.boxShadow =
-              "0 0 0 2px var(--gold-dim), 0 0 16px rgba(201,168,76,0.08)";
+              "0 4px 20px rgba(26,58,107,0.08), 0 0 0 3px rgba(26,58,107,0.06)";
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = "var(--glass-border)";
-            e.currentTarget.style.boxShadow = "none";
+            e.currentTarget.style.borderColor = "#D4C9B8";
+            e.currentTarget.style.boxShadow =
+              "0 4px 20px rgba(26,58,107,0.06), inset 0 1px 0 rgba(255,255,255,0.9)";
           }}
         />
         {/* Placeholder colour handled via inline style workaround in globals */}
@@ -143,7 +149,7 @@ export default function QuestionInput({
                   ? "var(--vermillion)"
                   : voiceQuotaExhausted
                   ? "rgba(194,77,44,0.08)"
-                  : "rgba(201,168,76,0.08)",
+                  : "rgba(26,58,107,0.04)",
                 border: isListening
                   ? "1px solid var(--vermillion-bright)"
                   : voiceQuotaExhausted
@@ -176,17 +182,22 @@ export default function QuestionInput({
           <button
             type="submit"
             disabled={isLoading || disabled || !question.trim()}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-md"
+            className="flex items-center justify-center transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             style={{
-              background: "var(--gold)",
-              color: "var(--sanctum)",
+              width: 48,
+              height: 48,
+              borderRadius: 16,
+              background: "linear-gradient(135deg, #1A3A6B, #2A5298)",
+              color: "#FAF6EF",
+              boxShadow: "0 2px 8px rgba(26,58,107,0.2)",
+              border: "none",
             }}
             aria-label="Search"
           >
             {isLoading ? (
               <svg
                 className="w-5 h-5 animate-spin"
-                style={{ color: "var(--sanctum)" }}
+                style={{ color: "#FAF6EF" }}
                 fill="none"
                 viewBox="0 0 24 24"
               >
@@ -207,7 +218,7 @@ export default function QuestionInput({
             ) : (
               <svg
                 className="w-5 h-5"
-                style={{ color: "var(--sanctum)" }}
+                style={{ color: "#FAF6EF" }}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -224,34 +235,32 @@ export default function QuestionInput({
         </div>
       </form>
 
-      {/* Example question pills */}
-      <div className="mt-5 flex flex-wrap gap-2.5 justify-center">
-        {EXAMPLE_QUESTIONS.map((eq) => (
-          <button
-            key={eq}
-            onClick={() => {
-              setQuestion(eq);
-              onSubmit(eq);
-            }}
-            disabled={isLoading || disabled}
-            className="px-4 py-2 text-sm rounded-full transition-all duration-200 font-sans disabled:opacity-30 min-h-[44px]"
-            style={{
-              background: "var(--glass)",
-              border: "1px solid var(--gold-dim)",
-              color: "var(--text-secondary)",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "var(--gold)";
-              e.currentTarget.style.color = "var(--text-primary)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "var(--gold-dim)";
-              e.currentTarget.style.color = "var(--text-secondary)";
-            }}
-          >
-            {eq}
-          </button>
-        ))}
+      {/* Example question cards */}
+      <div className="mt-6 grid grid-cols-1 gap-3 max-w-xl mx-auto">
+        {EXAMPLE_QUESTIONS.slice(0, 3).map((eq, i) => {
+          const accents = ["#1A3A6B", "#C9A84C", "#C24D2C"];
+          return (
+            <button
+              key={eq}
+              onClick={() => { setQuestion(eq); onSubmit(eq); }}
+              disabled={isLoading || disabled}
+              className="text-left transition-all duration-200 font-serif disabled:opacity-30"
+              style={{
+                background: "var(--bg-card-gradient)",
+                border: "1px solid #D4C9B8",
+                borderLeft: `3.5px solid ${accents[i % 3]}`,
+                borderRadius: 14,
+                padding: "18px 20px",
+                fontSize: 17,
+                color: "#2C4A78",
+                minHeight: 56,
+                boxShadow: "0 1px 3px rgba(26,58,107,0.04), 0 1px 2px rgba(0,0,0,0.03)",
+              }}
+            >
+              {eq}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
