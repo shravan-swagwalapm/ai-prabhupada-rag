@@ -6,7 +6,6 @@ import { useAuth } from "@/components/AuthProvider";
 import QuestionInput from "@/components/QuestionInput";
 import AnswerTabs from "@/components/AnswerTabs";
 import FontSizeToggle from "@/components/FontSizeToggle";
-import PrabhupadaWalkingSVG from "@/components/PrabhupadaWalkingSVG";
 import SubscribeGate from "@/components/SubscribeGate";
 import ShareBar from "@/components/ShareBar";
 import LotusWatermark from "@/components/LotusWatermark";
@@ -151,7 +150,17 @@ export default function Home() {
         <div className="max-w-3xl mx-auto flex items-center justify-between px-5 py-3">
         {/* Logo / brand */}
         <div className="flex items-center gap-2.5">
-          <PrabhupadaWalkingSVG variant="logo" className="prabhupada-walk shrink-0" />
+          <picture>
+            <source srcSet="/prabhupada-walking.webp" type="image/webp" />
+            <img
+              src="/prabhupada-walking.png"
+              alt="Prabhupada AI"
+              className="shrink-0 rounded-full"
+              width={38}
+              height={38}
+              style={{ height: 38, width: 38, objectFit: "cover", border: "2px solid var(--glass-border-hover)" }}
+            />
+          </picture>
           <span
             className="text-lg font-bold font-serif"
             style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
@@ -228,7 +237,7 @@ export default function Home() {
           className="relative text-3xl sm:text-4xl font-serif font-bold leading-tight"
           style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}
         >
-          Prabhupada AI{user?.name ? `, ${user.name.split(" ")[0].charAt(0).toUpperCase()}${user.name.split(" ")[0].slice(1)}` : ""}.
+          Hare Krsna{user?.name ? `, ${user.name.split(" ")[0].charAt(0).toUpperCase()}${user.name.split(" ")[0].slice(1)}` : ""}.
         </h1>
         <p
           className="relative mt-3 text-lg font-sans max-w-md mx-auto"
