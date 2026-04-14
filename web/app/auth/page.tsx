@@ -32,6 +32,8 @@ const EXAMPLE_QUESTIONS = [
   "What does Krishna say about balancing family and spiritual life?",
 ];
 
+const GSI_FALLBACK_DELAY_MS = 5000;
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function AuthPage() {
@@ -62,7 +64,7 @@ export default function AuthPage() {
       if (heroBtn && !heroBtn.querySelector("iframe")) {
         setShowGsiFallback(true);
       }
-    }, 5000);
+    }, GSI_FALLBACK_DELAY_MS);
     return () => clearTimeout(fallbackTimer);
   }, [isLoading, isAuthenticated]);
 
@@ -150,6 +152,7 @@ export default function AuthPage() {
 
           {showGsiFallback && (
             <p
+              aria-live="polite"
               className="text-sm text-center max-w-xs leading-relaxed"
               style={{ color: "var(--text-muted)" }}
             >
@@ -528,6 +531,17 @@ export default function AuthPage() {
             {/* Google Sign-In */}
             <div className="flex flex-col items-center gap-4">
               <div id="google-signin-btn-bottom" />
+
+              {showGsiFallback && (
+                <p
+                  aria-live="polite"
+                  className="text-sm text-center max-w-xs leading-relaxed"
+                  style={{ color: "rgba(250,246,239,0.65)" }}
+                >
+                  Having trouble signing in? Try opening this page in Chrome,
+                  or update Safari to the latest version.
+                </p>
+              )}
 
               {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
                 <button
