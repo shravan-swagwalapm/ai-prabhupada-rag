@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { initGoogleSignIn } from "@/lib/auth";
@@ -38,6 +38,7 @@ export default function AuthPage() {
   const { isAuthenticated, isLoading, login } = useAuth();
   const router = useRouter();
   const gsiInitialized = useRef(false);
+  const [showGsiFallback, setShowGsiFallback] = useState(false);
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -54,6 +55,15 @@ export default function AuthPage() {
     initGoogleSignIn("google-signin-btn-bottom", () => {
       window.location.href = "/";
     });
+
+    // If GSI button hasn't rendered after 5s, show fallback help
+    const fallbackTimer = setTimeout(() => {
+      const heroBtn = document.getElementById("google-signin-btn-hero");
+      if (heroBtn && !heroBtn.querySelector("iframe")) {
+        setShowGsiFallback(true);
+      }
+    }, 5000);
+    return () => clearTimeout(fallbackTimer);
   }, [isLoading, isAuthenticated]);
 
   if (isLoading) {
@@ -137,6 +147,16 @@ export default function AuthPage() {
         {/* Hero CTA */}
         <div className="mt-5 sm:mt-8 flex flex-col items-center gap-3">
           <div id="google-signin-btn-hero" />
+
+          {showGsiFallback && (
+            <p
+              className="text-sm text-center max-w-xs leading-relaxed"
+              style={{ color: "var(--text-muted)" }}
+            >
+              Having trouble signing in? Try opening this page in Chrome,
+              or update Safari to the latest version.
+            </p>
+          )}
 
           {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
             <button

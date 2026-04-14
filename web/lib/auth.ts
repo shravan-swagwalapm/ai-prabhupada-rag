@@ -54,6 +54,7 @@ function renderGSIButton(
 
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
+    use_fedcm_for_prompt: true,
     callback: async (response: { credential: string }) => {
       try {
         const result = await loginWithGoogle(response.credential);
