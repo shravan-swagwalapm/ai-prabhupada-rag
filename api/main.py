@@ -244,6 +244,7 @@ async def lifespan(app: FastAPI):
     bg = threading.Thread(target=_load_in_background, daemon=True)
     bg.start()
     yield
+    _voice_executor.shutdown(wait=True, cancel_futures=True)
     logger.info("API server shutting down")
 
 
@@ -334,10 +335,10 @@ def generate_audio_background(audio_id: str, text: str) -> None:
 
     partial_path = AUDIO_CACHE_DIR / f"{audio_id}.partial.mp3"
     final_path = AUDIO_CACHE_DIR / f"{audio_id}.mp3"
+    bytes_written = 0
 
     try:
         from voice_synthesizer import synthesize_speech_streaming
-        bytes_written = 0
         _update_audio_job(audio_id, "streaming", bytes_ready=0)
 
         with open(partial_path, "wb") as f:
@@ -357,13 +358,13 @@ def generate_audio_background(audio_id: str, text: str) -> None:
         logger.warning("Voice not configured: %s", e)
         if partial_path.exists():
             partial_path.unlink(missing_ok=True)
-        _update_audio_job(audio_id, "error")
+        _update_audio_job(audio_id, "error", bytes_ready=bytes_written)
     except Exception as e:
         logger.error("Audio generation failed for %s: %s", audio_id, e, exc_info=True)
         if partial_path.exists():
             partial_path.unlink(missing_ok=True)
         _elevenlabs_breaker.record_failure()
-        _update_audio_job(audio_id, "error")
+        _update_audio_job(audio_id, "error", bytes_ready=bytes_written)
 
 
 # ── Auth Endpoints ───────────────────────────────────────────────────────────
@@ -923,8 +924,8 @@ async def query_stream(
 
 STREAM_POLL_TIMEOUT_S = 300  # Max time to poll for streaming audio (5 minutes)
 
-def _stream_partial_audio(audio_id: str):
-    """Generator that yields bytes from a .partial.mp3 as it grows, stopping when done."""
+async def _stream_partial_audio(audio_id: str):
+    """Async generator that yields bytes from a .partial.mp3 as it grows, stopping when done."""
     partial_path = AUDIO_CACHE_DIR / f"{audio_id}.partial.mp3"
     bytes_sent = 0
     started = time.monotonic()
@@ -964,9 +965,22 @@ def _stream_partial_audio(audio_id: str):
                         continue  # Check immediately for more data
             except OSError:
                 pass  # File may have been renamed/deleted between exists() and open()
+        else:
+            # Fallback: partial may have been renamed to final between loops
+            final_path = AUDIO_CACHE_DIR / f"{audio_id}.mp3"
+            if final_path.exists():
+                try:
+                    with open(final_path, "rb") as f:
+                        f.seek(bytes_sent)
+                        remaining = f.read()
+                        if remaining:
+                            yield remaining
+                    return
+                except OSError:
+                    pass
 
         # No new data yet — poll again after a short sleep
-        time.sleep(0.5)
+        await asyncio.sleep(0.5)
 
 
 @app.get("/api/audio/{audio_id}")
@@ -1030,6 +1044,12 @@ async def audio_status(audio_id: str):
         if audio_path.exists():
             _store_audio_job(audio_id, "ready")  # Repopulate registry
             return {"audio_id": audio_id, "status": "ready"}
+        # Orphaned partial file from a crashed process — clean up
+        partial_path = AUDIO_CACHE_DIR / f"{audio_id}.partial.mp3"
+        if partial_path.exists():
+            partial_path.unlink(missing_ok=True)
+            logger.warning("Cleaned up orphaned partial audio: %s", audio_id)
+            return {"audio_id": audio_id, "status": "error"}
         raise HTTPException(status_code=404, detail="Audio ID not found")
 
     status = job["status"]
