@@ -28,12 +28,13 @@ import sys
 import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import asyncio
-from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, Query, Request
+from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field, field_validator
@@ -81,9 +82,12 @@ _faq_data: Dict[str, dict] = {}  # normalized question -> {answer_text, passages
 _elevenlabs_breaker = CircuitBreaker()
 
 # ── Audio job registry (bounded to prevent unbounded memory growth) ───────────
-_audio_jobs: Dict[str, str] = {}   # audio_id -> "pending" | "ready" | "error" | "unavailable"
+_audio_jobs: Dict[str, dict] = {}  # audio_id -> {"status": "pending"|"streaming"|"ready"|"error"|"unavailable", "bytes_ready": int}
 _MAX_AUDIO_JOBS = 500              # Evict oldest entries when this is exceeded
 _audio_jobs_lock = threading.Lock()
+
+# ── Thread pool for voice synthesis (bounded concurrency) ─────────────────────
+_voice_executor = ThreadPoolExecutor(max_workers=10, thread_name_prefix="voice")
 
 # ── Rate limiting (simple sliding-window, per client IP) ─────────────────────
 _RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "10"))
@@ -103,24 +107,30 @@ ALLOWED_ORIGINS = [
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _store_audio_job(audio_id: str, status: str) -> None:
+def _store_audio_job(audio_id: str, status: str, bytes_ready: int = 0) -> None:
     """Store an audio job, evicting the oldest entry if at capacity."""
     with _audio_jobs_lock:
         if len(_audio_jobs) >= _MAX_AUDIO_JOBS:
             oldest_key = next(iter(_audio_jobs))
             del _audio_jobs[oldest_key]
             logger.debug("Evicted oldest audio job to stay under limit")
-        _audio_jobs[audio_id] = status
+        _audio_jobs[audio_id] = {"status": status, "bytes_ready": bytes_ready}
 
 
-def _update_audio_job(audio_id: str, status: str) -> None:
+def _update_audio_job(audio_id: str, status: str, bytes_ready: int = 0) -> None:
     with _audio_jobs_lock:
-        _audio_jobs[audio_id] = status
+        if audio_id in _audio_jobs:
+            _audio_jobs[audio_id]["status"] = status
+            _audio_jobs[audio_id]["bytes_ready"] = bytes_ready
+        else:
+            _audio_jobs[audio_id] = {"status": status, "bytes_ready": bytes_ready}
 
 
-def _get_audio_job(audio_id: str) -> Optional[str]:
+def _get_audio_job(audio_id: str) -> Optional[dict]:
+    """Return the audio job dict, or None if not found."""
     with _audio_jobs_lock:
-        return _audio_jobs.get(audio_id)
+        job = _audio_jobs.get(audio_id)
+        return dict(job) if job is not None else None
 
 
 def _is_rate_limited(client_ip: str) -> bool:
@@ -315,25 +325,43 @@ class QueryResponse(BaseModel):
 # ── Audio background task ─────────────────────────────────────────────────────
 
 def generate_audio_background(audio_id: str, text: str) -> None:
-    """Background task: generate voice audio with circuit breaker protection."""
+    """Background task: stream voice audio chunks to disk with circuit breaker protection."""
     # Check circuit breaker before attempting synthesis
     if _elevenlabs_breaker.is_open():
         logger.warning("ElevenLabs circuit breaker is OPEN, skipping audio %s", audio_id)
         _update_audio_job(audio_id, "unavailable")
         return
 
+    partial_path = AUDIO_CACHE_DIR / f"{audio_id}.partial.mp3"
+    final_path = AUDIO_CACHE_DIR / f"{audio_id}.mp3"
+
     try:
-        from voice_synthesizer import synthesize_speech
-        output_path = AUDIO_CACHE_DIR / f"{audio_id}.mp3"
-        synthesize_speech(text, output_path=output_path)
-        _update_audio_job(audio_id, "ready")
+        from voice_synthesizer import synthesize_speech_streaming
+        bytes_written = 0
+        _update_audio_job(audio_id, "streaming", bytes_ready=0)
+
+        with open(partial_path, "wb") as f:
+            for chunk in synthesize_speech_streaming(text):
+                f.write(chunk)
+                f.flush()
+                bytes_written += len(chunk)
+                _update_audio_job(audio_id, "streaming", bytes_ready=bytes_written)
+
+        # Rename partial to final atomically
+        partial_path.rename(final_path)
+        _update_audio_job(audio_id, "ready", bytes_ready=bytes_written)
         _elevenlabs_breaker.record_success()
-        logger.info("Audio ready: %s", audio_id)
+        logger.info("Audio ready: %s (%d bytes)", audio_id, bytes_written)
+
     except FileNotFoundError as e:
         logger.warning("Voice not configured: %s", e)
+        if partial_path.exists():
+            partial_path.unlink(missing_ok=True)
         _update_audio_job(audio_id, "error")
     except Exception as e:
         logger.error("Audio generation failed for %s: %s", audio_id, e, exc_info=True)
+        if partial_path.exists():
+            partial_path.unlink(missing_ok=True)
         _elevenlabs_breaker.record_failure()
         _update_audio_job(audio_id, "error")
 
@@ -469,7 +497,6 @@ async def health_check():
 @app.post("/api/query", response_model=QueryResponse)
 async def query_scriptures(
     req: QueryRequest,
-    background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user),
 ):
     """
@@ -621,7 +648,7 @@ async def query_scriptures(
     if req.include_voice and ai_answer:
         audio_id = str(uuid.uuid4())
         _store_audio_job(audio_id, "pending")
-        background_tasks.add_task(generate_audio_background, audio_id, ai_answer)
+        _voice_executor.submit(generate_audio_background, audio_id, ai_answer)
 
     # Save history (quota already decremented atomically at top)
     if ai_answer:
@@ -858,13 +885,7 @@ async def query_stream(
                 yield f"data: {json_module.dumps({'type': 'audio_status', 'data': 'unavailable'})}\n\n"
             else:
                 _store_audio_job(audio_id, "pending")
-                t = threading.Thread(
-                    target=generate_audio_background,
-                    args=(audio_id, answer_text),
-                    daemon=True,
-                    name=f"voice-{audio_id}",
-                )
-                t.start()
+                _voice_executor.submit(generate_audio_background, audio_id, answer_text)
                 yield f"data: {json_module.dumps({'type': 'audio_id', 'data': audio_id})}\n\n"
 
         # Step 5: Save to history + cache (quota already decremented atomically at top)
@@ -900,16 +921,60 @@ async def query_stream(
 
 # ── Audio Endpoints ──────────────────────────────────────────────────────────
 
+def _stream_partial_audio(audio_id: str):
+    """Generator that yields bytes from a .partial.mp3 as it grows, stopping when done."""
+    partial_path = AUDIO_CACHE_DIR / f"{audio_id}.partial.mp3"
+    bytes_sent = 0
+
+    while True:
+        job = _get_audio_job(audio_id)
+        if job is None:
+            return
+        status = job["status"]
+
+        # If the file was renamed to .mp3 (status=ready), send any remaining bytes from final file
+        if status == "ready":
+            final_path = AUDIO_CACHE_DIR / f"{audio_id}.mp3"
+            if final_path.exists():
+                with open(final_path, "rb") as f:
+                    f.seek(bytes_sent)
+                    remaining = f.read()
+                    if remaining:
+                        yield remaining
+            return
+
+        if status == "error":
+            return
+
+        # Read new bytes from partial file
+        if partial_path.exists():
+            try:
+                with open(partial_path, "rb") as f:
+                    f.seek(bytes_sent)
+                    new_data = f.read()
+                    if new_data:
+                        bytes_sent += len(new_data)
+                        yield new_data
+                        continue  # Check immediately for more data
+            except OSError:
+                pass  # File may have been renamed/deleted between exists() and open()
+
+        # No new data yet — poll again after a short sleep
+        time.sleep(0.5)
+
+
 @app.get("/api/audio/{audio_id}")
 async def get_audio(audio_id: str):
-    """Serve a generated audio file."""
+    """Serve a generated audio file. Streams partial audio during synthesis."""
     if not re.fullmatch(r"[a-zA-Z0-9\-]{1,64}", audio_id):
         raise HTTPException(status_code=400, detail="Invalid audio ID format")
 
-    status = _get_audio_job(audio_id)
+    job = _get_audio_job(audio_id)
 
-    if status is None:
+    if job is None:
         raise HTTPException(status_code=404, detail="Audio ID not found")
+
+    status = job["status"]
 
     if status == "pending":
         return JSONResponse(
@@ -926,6 +991,13 @@ async def get_audio(audio_id: str):
     if status == "error":
         raise HTTPException(status_code=500, detail="Audio generation failed")
 
+    if status == "streaming":
+        return StreamingResponse(
+            _stream_partial_audio(audio_id),
+            media_type="audio/mpeg",
+        )
+
+    # status == "ready"
     audio_path = AUDIO_CACHE_DIR / f"{audio_id}.mp3"
     if not audio_path.exists():
         logger.error("Audio file missing despite ready status: %s", audio_path)
@@ -944,17 +1016,21 @@ async def audio_status(audio_id: str):
     if not re.fullmatch(r"[a-zA-Z0-9\-]{1,64}", audio_id):
         raise HTTPException(status_code=400, detail="Invalid audio ID format")
 
-    status = _get_audio_job(audio_id)
+    job = _get_audio_job(audio_id)
 
     # Fallback: check disk if not in memory registry (survives container restarts)
-    if status is None:
+    if job is None:
         audio_path = AUDIO_CACHE_DIR / f"{audio_id}.mp3"
         if audio_path.exists():
             _store_audio_job(audio_id, "ready")  # Repopulate registry
             return {"audio_id": audio_id, "status": "ready"}
         raise HTTPException(status_code=404, detail="Audio ID not found")
 
-    return {"audio_id": audio_id, "status": status}
+    status = job["status"]
+    result: dict = {"audio_id": audio_id, "status": status}
+    if status == "streaming":
+        result["bytes_ready"] = job.get("bytes_ready", 0)
+    return result
 
 
 # ---------------------------------------------------------------------------
