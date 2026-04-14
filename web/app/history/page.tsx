@@ -138,7 +138,7 @@ export default function HistoryPage() {
                       <p className="font-serif line-clamp-2" style={{ color: "var(--text-primary)", fontSize: 16 }}>
                         {entry.question}
                       </p>
-                      <p className="text-sm font-sans mt-1.5" style={{ color: "var(--text-secondary)" }}>
+                      <p className="text-base font-sans mt-1.5" style={{ color: "var(--text-secondary)" }}>
                         {date} · {entry.answer_mode}
                       </p>
                     </div>
