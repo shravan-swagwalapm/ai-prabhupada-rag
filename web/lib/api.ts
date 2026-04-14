@@ -21,7 +21,8 @@ export interface QueryResponse {
 
 export interface AudioStatus {
   audio_id: string;
-  status: "pending" | "ready" | "error" | "not_found" | "unavailable";
+  status: "pending" | "streaming" | "ready" | "error" | "not_found" | "unavailable";
+  bytes_ready?: number;
 }
 
 export interface UserInfo {

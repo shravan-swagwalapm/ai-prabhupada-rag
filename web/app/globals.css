@@ -191,6 +191,18 @@ textarea:focus {
   transition: width 80ms linear;
 }
 
+/* Audio player — gold shimmer during streaming playback */
+@keyframes audio-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.audio-shimmer {
+  background: linear-gradient(90deg, rgba(201,168,76,0.15) 25%, rgba(201,168,76,0.4) 50%, rgba(201,168,76,0.15) 75%);
+  background-size: 200% 100%;
+  animation: audio-shimmer 2s ease-in-out infinite;
+}
+
 /* Source graph — node interactions */
 .graph-node-scripture {
   cursor: pointer;

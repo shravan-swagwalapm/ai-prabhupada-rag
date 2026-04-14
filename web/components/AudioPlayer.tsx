@@ -5,9 +5,14 @@ import { checkAudioStatus, getAudioUrl } from "@/lib/api";
 
 interface Props {
   audioId: string | null;
+  /** Pre-created Audio element from user gesture (for mobile auto-play). */
+  gestureAudio?: HTMLAudioElement | null;
 }
 
-type AudioState = "idle" | "generating" | "ready" | "playing" | "paused" | "error";
+type AudioState = "idle" | "generating" | "streaming" | "ready" | "playing" | "paused" | "error";
+
+/** Backend status — tracks what the server reports separately from playback state. */
+type BackendStatus = "pending" | "streaming" | "ready" | "error" | "unknown";
 
 const POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const POLL_INITIAL_INTERVAL_MS = 1500;
@@ -18,7 +23,8 @@ const SPEED_OPTIONS = [1, 1.25, 1.5, 0.75] as const;
 function useScrub(
   audioRef: React.MutableRefObject<HTMLAudioElement | null>,
   duration: number,
-  setProgress: (p: number) => void
+  setProgress: (p: number) => void,
+  scrubDisabled: boolean
 ) {
   const isDragging = useRef(false);
   const dragProgress = useRef(0);
@@ -65,7 +71,7 @@ function useScrub(
 
   const onStart = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
-      if (duration <= 0) return;
+      if (scrubDisabled || duration <= 0) return;
       isDragging.current = true;
       const nativeEvent = e.nativeEvent;
       const pos = getPositionFromEvent(nativeEvent as MouseEvent | TouchEvent);
@@ -78,14 +84,15 @@ function useScrub(
       document.addEventListener("touchmove", onMove);
       document.addEventListener("touchend", onEnd);
     },
-    [duration, getPositionFromEvent, onMove, onEnd, setProgress]
+    [scrubDisabled, duration, getPositionFromEvent, onMove, onEnd, setProgress]
   );
 
   return { containerRef, onStart, isDragging };
 }
 
-export default function AudioPlayer({ audioId }: Props) {
+export default function AudioPlayer({ audioId, gestureAudio }: Props) {
   const [state, setState] = useState<AudioState>("idle");
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>("unknown");
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [speedIndex, setSpeedIndex] = useState(0);
@@ -94,11 +101,21 @@ export default function AudioPlayer({ audioId }: Props) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollStartRef = useRef<number>(0);
   const animFrameRef = useRef<number>(0);
+  /** Track whether we've already started auto-play for this audioId. */
+  const autoPlayFiredRef = useRef<string | null>(null);
+  /** Ref to current backend status — used in audio event handlers to avoid stale closures. */
+  const backendStatusRef = useRef<BackendStatus>("unknown");
 
   const currentSpeed = SPEED_OPTIONS[speedIndex];
 
-  const progressBar = useScrub(audioRef, duration, setProgress);
-  const waveformBar = useScrub(audioRef, duration, setProgress);
+  // Keep ref in sync for use in audio event handler closures
+  backendStatusRef.current = backendStatus;
+
+  // Scrubbing is disabled when backend is still streaming (can't seek a live stream)
+  const scrubDisabled = backendStatus === "streaming";
+
+  const progressBar = useScrub(audioRef, duration, setProgress, scrubDisabled);
+  const waveformBar = useScrub(audioRef, duration, setProgress, scrubDisabled);
 
   const stopPolling = () => {
     if (timeoutRef.current) {
@@ -107,22 +124,81 @@ export default function AudioPlayer({ audioId }: Props) {
     }
   };
 
+  /** Start playback using either the gesture-unlocked Audio or a new one. */
+  const startStreaming = useCallback(
+    (id: string) => {
+      // Prevent double auto-play for same audioId
+      if (autoPlayFiredRef.current === id) return;
+      autoPlayFiredRef.current = id;
+
+      // Reuse the gesture-unlocked Audio element if available, otherwise create new
+      let audio: HTMLAudioElement;
+      if (gestureAudio) {
+        audio = gestureAudio;
+      } else {
+        audio = new Audio();
+      }
+
+      audio.src = getAudioUrl(id);
+      audio.playbackRate = currentSpeed;
+
+      audio.onended = () => {
+        setState("ready");
+        setProgress(0);
+      };
+      audio.onerror = () => {
+        setState("error");
+      };
+      audio.onstalled = () => {
+        // Only treat as error if backend also errored — brief stalls are normal during streaming
+        if (backendStatusRef.current === "error") {
+          setState("error");
+        }
+      };
+      audio.onloadedmetadata = () => {
+        if (isFinite(audio.duration) && audio.duration > 0) {
+          setDuration(audio.duration);
+        }
+      };
+      // Also listen for durationchange — fires when full file is buffered
+      audio.ondurationchange = () => {
+        if (isFinite(audio.duration) && audio.duration > 0) {
+          setDuration(audio.duration);
+        }
+      };
+
+      audioRef.current = audio;
+      audio.play().catch(() => {
+        // Auto-play blocked — fall back to manual play (ready state)
+        setState("ready");
+      });
+      setState("playing");
+      animFrameRef.current = requestAnimationFrame(updateProgressLoop);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [gestureAudio, currentSpeed]
+  );
+
   // Poll for audio readiness
   useEffect(() => {
     if (!audioId) {
       setState("idle");
+      setBackendStatus("unknown");
       stopPolling();
       return;
     }
 
     setState("generating");
+    setBackendStatus("pending");
     pollStartRef.current = Date.now();
+    autoPlayFiredRef.current = null;
     let currentInterval = POLL_INITIAL_INTERVAL_MS;
 
     const schedulePoll = () => {
       timeoutRef.current = setTimeout(async () => {
         if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
           setState("error");
+          setBackendStatus("error");
           return;
         }
 
@@ -132,28 +208,57 @@ export default function AudioPlayer({ audioId }: Props) {
           return;
         }
 
-        if (status.status === "ready") {
-          setState("ready");
+        if (status.status === "streaming") {
+          setBackendStatus("streaming");
+          // Auto-play as soon as streaming starts
+          startStreaming(audioId);
+          // Continue polling to detect transition to "ready"
+          currentInterval = POLL_INITIAL_INTERVAL_MS;
+          schedulePoll();
+        } else if (status.status === "ready") {
+          setBackendStatus("ready");
+          // If we were already playing (streaming), just update status — don't re-create audio
+          if (autoPlayFiredRef.current !== audioId) {
+            setState("ready");
+          }
         } else if (status.status === "error" || status.status === "not_found") {
+          setBackendStatus("error");
           setState("error");
         } else {
+          // pending or other — keep polling
           currentInterval = Math.min(currentInterval * 2, POLL_MAX_INTERVAL_MS);
           schedulePoll();
         }
       }, currentInterval);
     };
 
+    // Immediate first check
     (async () => {
       const status = await checkAudioStatus(audioId);
-      if (status?.status === "ready") { setState("ready"); return; }
-      if (status?.status === "error" || status?.status === "not_found") { setState("error"); return; }
+      if (status?.status === "streaming") {
+        setBackendStatus("streaming");
+        startStreaming(audioId);
+        schedulePoll();
+        return;
+      }
+      if (status?.status === "ready") {
+        setBackendStatus("ready");
+        setState("ready");
+        return;
+      }
+      if (status?.status === "error" || status?.status === "not_found") {
+        setBackendStatus("error");
+        setState("error");
+        return;
+      }
       schedulePoll();
     })();
 
     return () => stopPolling();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioId]);
 
-  // Clean up audio + animation frame
+  // Clean up audio + animation frame on audioId change
   useEffect(() => {
     return () => {
       if (audioRef.current) {
@@ -165,14 +270,16 @@ export default function AudioPlayer({ audioId }: Props) {
     };
   }, [audioId]);
 
-  const updateProgress = () => {
+  const updateProgressLoop = () => {
     const audio = audioRef.current;
     if (audio && !progressBar.isDragging.current && !waveformBar.isDragging.current) {
       setProgress(audio.currentTime);
-      setDuration(audio.duration || 0);
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        setDuration(audio.duration);
+      }
     }
     if (audio && !audio.paused && !audio.ended) {
-      animFrameRef.current = requestAnimationFrame(updateProgress);
+      animFrameRef.current = requestAnimationFrame(updateProgressLoop);
     }
   };
 
@@ -188,6 +295,11 @@ export default function AudioPlayer({ audioId }: Props) {
       };
       audio.onerror = () => setState("error");
       audio.onloadedmetadata = () => setDuration(audio.duration);
+      audio.ondurationchange = () => {
+        if (isFinite(audio.duration) && audio.duration > 0) {
+          setDuration(audio.duration);
+        }
+      };
       audioRef.current = audio;
     }
 
@@ -197,14 +309,12 @@ export default function AudioPlayer({ audioId }: Props) {
       setState("paused");
     } else {
       audioRef.current.play().catch(() => {
-        // Only set error if we're still supposed to be playing.
-        // Avoids race condition where pause() during load triggers a play rejection.
         if (audioRef.current?.paused === false) {
           setState("error");
         }
       });
       setState("playing");
-      animFrameRef.current = requestAnimationFrame(updateProgress);
+      animFrameRef.current = requestAnimationFrame(updateProgressLoop);
     }
   };
 
@@ -224,8 +334,46 @@ export default function AudioPlayer({ audioId }: Props) {
 
   if (!audioId || state === "idle") return null;
 
-  const rawPct = duration > 0 ? (progress / duration) * 100 : 0;
+  // Error state — graceful failure
+  if (state === "error") {
+    return (
+      <div className="w-full max-w-3xl mx-auto mt-4">
+        <div
+          className="overflow-hidden px-5 py-4"
+          style={{
+            background: "linear-gradient(135deg, var(--krishna-blue), var(--krishna-blue-dark))",
+            borderRadius: 16,
+          }}
+        >
+          <p
+            className="font-sans text-sm text-center"
+            style={{ color: "rgba(250,246,239,0.6)" }}
+          >
+            Voice unavailable — read the text answer below
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const isStreaming = backendStatus === "streaming";
+  const hasDuration = isFinite(duration) && duration > 0;
+  const rawPct = hasDuration ? (progress / duration) * 100 : 0;
   const progressPct = isFinite(rawPct) ? Math.max(0, Math.min(100, rawPct)) : 0;
+
+  // Cursor style: default when scrubbing disabled, pointer when allowed
+  const scrubCursor = scrubDisabled ? "default" : (hasDuration ? "pointer" : "default");
+
+  // Status label
+  const statusLabel = (() => {
+    if (state === "generating") return "Generating Prabhupada\u2019s voice...";
+    if (state === "playing" && isStreaming) return "Prabhupada is speaking...";
+    if (state === "playing") return "Prabhupada is speaking...";
+    if (state === "streaming") return "Preparing voice...";
+    if (state === "ready") return "Listen to Prabhupada";
+    if (state === "paused") return "Paused";
+    return "";
+  })();
 
   return (
     <div className="w-full max-w-3xl mx-auto mt-4">
@@ -236,7 +384,7 @@ export default function AudioPlayer({ audioId }: Props) {
           borderRadius: 16,
         }}
       >
-        {/* Progress bar — draggable, thickens on hover */}
+        {/* Progress bar — draggable (when not streaming), thickens on hover */}
         <div
           ref={progressBar.containerRef}
           onMouseDown={progressBar.onStart}
@@ -246,23 +394,33 @@ export default function AudioPlayer({ audioId }: Props) {
           style={{
             height: hoveringBar || progressBar.isDragging.current ? 8 : 3,
             background: "rgba(250,246,239,0.08)",
-            cursor: duration > 0 ? "pointer" : "default",
+            cursor: scrubCursor,
             transition: "height 0.15s ease",
             position: "relative",
           }}
         >
-          {/* Filled portion */}
-          <div
-            className="h-full"
-            style={{
-              width: `${progressPct}%`,
-              background: "linear-gradient(to right, #C9A84C, #E0C068)",
-              borderRadius: "0 2px 2px 0",
-              transition: progressBar.isDragging.current ? "none" : "width 0.1s",
-            }}
-          />
-          {/* Thumb — visible on hover */}
-          {(hoveringBar || progressBar.isDragging.current) && duration > 0 && (
+          {/* Shimmer fill during streaming, gold fill when ready */}
+          {state === "playing" && isStreaming ? (
+            <div
+              className="h-full audio-shimmer"
+              style={{
+                width: "100%",
+                borderRadius: "0 2px 2px 0",
+              }}
+            />
+          ) : (
+            <div
+              className="h-full"
+              style={{
+                width: `${progressPct}%`,
+                background: "linear-gradient(to right, #C9A84C, #E0C068)",
+                borderRadius: "0 2px 2px 0",
+                transition: progressBar.isDragging.current ? "none" : "width 0.1s",
+              }}
+            />
+          )}
+          {/* Thumb — visible on hover, only when scrubbing is allowed */}
+          {!scrubDisabled && (hoveringBar || progressBar.isDragging.current) && hasDuration && (
             <div
               style={{
                 position: "absolute",
@@ -284,15 +442,14 @@ export default function AudioPlayer({ audioId }: Props) {
           {/* Play button — gold circle */}
           <button
             onClick={togglePlay}
-            disabled={state === "generating" || state === "error"}
+            disabled={state === "generating"}
             className="flex items-center justify-center rounded-full transition-all disabled:cursor-not-allowed shrink-0"
             style={{
               width: 48,
               height: 48,
-              background: state === "generating" || state === "error"
+              background: state === "generating"
                 ? "rgba(201,168,76,0.15)"
                 : "linear-gradient(135deg, #C9A84C, #E0C068)",
-              opacity: state === "error" ? 0.4 : 1,
               boxShadow: state === "playing" ? "0 4px 12px rgba(201,168,76,0.25)" : "none",
             }}
             aria-label={state === "playing" ? "Pause" : "Listen to Prabhupada"}
@@ -317,22 +474,20 @@ export default function AudioPlayer({ audioId }: Props) {
           {/* Info */}
           <div className="flex-1 min-w-0">
             <p className="font-sans text-sm font-semibold truncate" style={{ color: "rgba(250,246,239,0.9)" }}>
-              {state === "generating" && "Generating Prabhupada\u2019s voice..."}
-              {state === "ready" && "Listen to Prabhupada"}
-              {state === "playing" && "Prabhupada is speaking..."}
-              {state === "paused" && "Paused"}
-              {state === "error" && "Voice unavailable"}
+              {statusLabel}
             </p>
-            {/* Waveform bars — draggable to seek */}
+            {/* Waveform bars — draggable to seek (when not streaming) */}
             <div
               ref={waveformBar.containerRef}
               onMouseDown={waveformBar.onStart}
               onTouchStart={waveformBar.onStart}
               className="flex items-end gap-[2px] mt-2 h-4"
-              style={{ cursor: duration > 0 ? "pointer" : "default" }}
+              style={{ cursor: scrubCursor }}
             >
               {Array.from({ length: 24 }).map((_, i) => {
-                const played = duration > 0 ? (i / 24) < (progress / duration) : false;
+                const played = hasDuration ? (i / 24) < (progress / duration) : false;
+                // During streaming, show a subtle animated effect instead of static bars
+                const streamingActive = state === "playing" && isStreaming;
                 return (
                   <div
                     key={i}
@@ -340,7 +495,11 @@ export default function AudioPlayer({ audioId }: Props) {
                       width: 3,
                       height: `${30 + Math.sin(i * 0.8) * 60}%`,
                       borderRadius: 2,
-                      background: played ? "#C9A84C" : "rgba(250,246,239,0.15)",
+                      background: streamingActive
+                        ? "rgba(201,168,76,0.35)"
+                        : played
+                          ? "#C9A84C"
+                          : "rgba(250,246,239,0.15)",
                       transition: waveformBar.isDragging.current ? "none" : "background 0.1s",
                     }}
                   />
@@ -371,8 +530,8 @@ export default function AudioPlayer({ audioId }: Props) {
             {currentSpeed}x
           </button>
 
-          {/* Time */}
-          {duration > 0 && (
+          {/* Time — elapsed only during streaming, elapsed / total when ready */}
+          {(state === "playing" || state === "paused") && (
             <span
               className="text-sm font-sans shrink-0"
               style={{
@@ -381,7 +540,20 @@ export default function AudioPlayer({ audioId }: Props) {
                 fontFamily: "monospace",
               }}
             >
-              {formatTime(progress)} / {formatTime(duration)}
+              {formatTime(progress)}{hasDuration && !isStreaming ? ` / ${formatTime(duration)}` : ""}
+            </span>
+          )}
+          {/* Show duration when ready but not yet playing */}
+          {state === "ready" && hasDuration && (
+            <span
+              className="text-sm font-sans shrink-0"
+              style={{
+                color: "rgba(250,246,239,0.4)",
+                fontVariantNumeric: "tabular-nums",
+                fontFamily: "monospace",
+              }}
+            >
+              {formatTime(duration)}
             </span>
           )}
         </div>

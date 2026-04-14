@@ -38,6 +38,8 @@ export default function Home() {
   const [quotaWallType, setQuotaWallType] = useState<"text" | "voice">("text");
 
   const cleanupStreamRef = useRef<(() => void) | null>(null);
+  /** Pre-created Audio element from user gesture — preserves mobile auto-play context. */
+  const gestureAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Auth guard
   useEffect(() => {
@@ -63,6 +65,14 @@ export default function Home() {
       setAnswer("");
       setAudioId(null);
       setCurrentQuestion(question);
+
+      // Create silent Audio element during user gesture to preserve mobile auto-play context.
+      // Browsers allow audio.play() later if the Audio was created in a user-initiated event handler.
+      if (voiceEnabled) {
+        gestureAudioRef.current = new Audio();
+      } else {
+        gestureAudioRef.current = null;
+      }
 
       const cleanup = queryStream(
         question,
@@ -312,7 +322,7 @@ export default function Home() {
       )}
 
       {/* Audio player — above answer, only when voice mode produced audio */}
-      {voiceEnabled && <AudioPlayer audioId={audioId} />}
+      {voiceEnabled && <AudioPlayer audioId={audioId} gestureAudio={gestureAudioRef.current} />}
 
       {/* Results with tabs */}
       <AnswerTabs
