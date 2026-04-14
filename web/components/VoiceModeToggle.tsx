@@ -81,7 +81,7 @@ export default function VoiceModeToggle({
           onClick={() => onToggle(true)}
           role="radio"
           aria-checked={voiceEnabled}
-          disabled={disabled || voiceQuotaExhausted}
+          disabled={disabled}
           className="flex items-center gap-2 px-5 py-2 text-sm font-sans font-semibold transition-all duration-200"
           style={{
             background: voiceEnabled ? "#FFFFFF" : "transparent",
