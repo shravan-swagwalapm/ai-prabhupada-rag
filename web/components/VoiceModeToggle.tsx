@@ -25,23 +25,26 @@ export default function VoiceModeToggle({
         transition: "opacity 0.2s ease",
       }}
     >
-      {/* Teaser label */}
-      <span
-        id="voice-mode-label"
-        className="text-sm font-serif"
-        style={{
-          color: "var(--gold-dim)",
-          letterSpacing: "0.02em",
-          fontStyle: "italic",
-        }}
-      >
-        Hear Prabhupada&apos;s voice
-      </span>
+      {/* Teaser label — only visible when Voice mode is selected */}
+      {voiceEnabled && (
+        <span
+          id="voice-mode-label"
+          className="text-sm font-serif"
+          style={{
+            color: "var(--gold-dim)",
+            letterSpacing: "0.02em",
+            fontStyle: "italic",
+          }}
+        >
+          Hear Prabhupada&apos;s voice
+        </span>
+      )}
 
       {/* Segmented control */}
       <div
         role="radiogroup"
-        aria-labelledby="voice-mode-label"
+        aria-labelledby={voiceEnabled ? "voice-mode-label" : undefined}
+        aria-label={!voiceEnabled ? "Answer mode" : undefined}
         className="flex gap-1"
         style={{
           border: "1px solid var(--glass-border)",
