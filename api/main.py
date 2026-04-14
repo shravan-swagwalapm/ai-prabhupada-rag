@@ -865,10 +865,37 @@ async def query_stream(
         if relevant_results:
             try:
                 from generate_answer import generate_answer_streaming
-                for chunk in generate_answer_streaming(question, relevant_results, mode=answer_mode):
-                    full_answer.append(chunk)
-                    yield f"data: {json_module.dumps({'type': 'answer_chunk', 'data': chunk})}\n\n"
-                    await asyncio.sleep(0)
+                # Run sync generator in thread to avoid blocking the event loop
+                # (Claude's time-to-first-token can be 10-30s with full system prompt)
+                import queue
+                chunk_queue: queue.Queue = queue.Queue()
+                _sentinel = object()
+
+                def _run_sync_gen():
+                    try:
+                        for chunk in generate_answer_streaming(question, relevant_results, mode=answer_mode):
+                            chunk_queue.put(chunk)
+                    except Exception as exc:
+                        chunk_queue.put(exc)
+                    finally:
+                        chunk_queue.put(_sentinel)
+
+                gen_thread = threading.Thread(target=_run_sync_gen, daemon=True)
+                gen_thread.start()
+
+                while True:
+                    # Non-blocking poll so the event loop stays free
+                    try:
+                        item = chunk_queue.get_nowait()
+                    except queue.Empty:
+                        await asyncio.sleep(0.05)
+                        continue
+                    if item is _sentinel:
+                        break
+                    if isinstance(item, Exception):
+                        raise item
+                    full_answer.append(item)
+                    yield f"data: {json_module.dumps({'type': 'answer_chunk', 'data': item})}\n\n"
             except Exception as e:
                 logger.error("Streaming generation failed: %s", e)
                 if not full_answer:
