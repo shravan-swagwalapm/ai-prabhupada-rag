@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import AIAnswer from "@/components/AIAnswer";
-import AudioPlayer from "@/components/AudioPlayer";
 import SourceGraph from "@/components/SourceGraph";
 import SourceDetail from "@/components/SourceDetail";
 import SourceDrawer from "@/components/SourceDrawer";
@@ -12,10 +11,9 @@ interface Props {
   passages: Passage[];
   answer: string;
   isStreaming: boolean;
-  audioId: string | null;
-  voiceEnabled: boolean;
   isSearching: boolean;
   question: string;
+  voiceEnabled?: boolean;
 }
 
 type Tab = "answer" | "sources";
@@ -24,10 +22,9 @@ export default function AnswerTabs({
   passages,
   answer,
   isStreaming,
-  audioId,
-  voiceEnabled,
   isSearching,
   question,
+  voiceEnabled = false,
 }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("answer");
   const [selectedPassageIndex, setSelectedPassageIndex] = useState<number | null>(null);
@@ -41,8 +38,6 @@ export default function AnswerTabs({
 
   const hasContent = passages.length > 0 || answer || isStreaming || isSearching;
   if (!hasContent) return null;
-
-  const answerMode = voiceEnabled ? "voice" : "text";
 
   return (
     <div className="w-full max-w-3xl mx-auto mt-8">
@@ -96,8 +91,7 @@ export default function AnswerTabs({
       {/* Tab content */}
       {activeTab === "answer" ? (
         <div className="space-y-4">
-          <AIAnswer answer={answer} isStreaming={isStreaming} mode={answerMode} />
-          {voiceEnabled && <AudioPlayer audioId={audioId} />}
+          <AIAnswer answer={answer} isStreaming={isStreaming} mode={voiceEnabled ? "voice" : "text"} />
         </div>
       ) : (
         <div>
