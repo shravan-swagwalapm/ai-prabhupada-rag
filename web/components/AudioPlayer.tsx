@@ -373,12 +373,16 @@ export default function AudioPlayer({ audioId, gestureAudio }: Props) {
   // Cursor style: default when scrubbing disabled, pointer when allowed
   const scrubCursor = scrubDisabled ? "default" : (hasDuration ? "pointer" : "default");
 
-  // Status label
+  // Status label — reflects both playback state and backend generation status
+  const isBackendDone = backendStatus === "ready";
   const statusLabel = (() => {
-    if (state === "generating") return "Generating Prabhupada\u2019s voice...";
-    if (state === "playing") return "Prabhupada is speaking...";
-    if (state === "ready") return "Listen to Prabhupada";
+    if (state === "generating") return "Generating Prabhupada\u2019s voice\u2026";
+    if (state === "playing" && !isBackendDone) return "Prabhupada is speaking\u2026 generating";
+    if (state === "playing") return "Prabhupada is speaking\u2026";
+    if (state === "paused" && !isBackendDone) return "Paused \u00B7 still generating\u2026";
     if (state === "paused") return "Paused";
+    if (state === "ready" && isBackendDone) return "Generated & saved";
+    if (state === "ready") return "Listen to Prabhupada";
     return "";
   })();
 
