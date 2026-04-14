@@ -1071,12 +1071,17 @@ async def audio_status(audio_id: str):
         if audio_path.exists():
             _store_audio_job(audio_id, "ready")  # Repopulate registry
             return {"audio_id": audio_id, "status": "ready"}
-        # Orphaned partial file from a crashed process — clean up
+        # Orphaned partial file from a crashed process — only clean up if old (>60s)
         partial_path = AUDIO_CACHE_DIR / f"{audio_id}.partial.mp3"
         if partial_path.exists():
-            partial_path.unlink(missing_ok=True)
-            logger.warning("Cleaned up orphaned partial audio: %s", audio_id)
-            return {"audio_id": audio_id, "status": "error"}
+            age = time.time() - partial_path.stat().st_mtime
+            if age > 60:
+                partial_path.unlink(missing_ok=True)
+                logger.warning("Cleaned up orphaned partial audio (age=%.0fs): %s", age, audio_id)
+                return {"audio_id": audio_id, "status": "error"}
+            else:
+                # Recent partial file — synthesis may still be running after a restart
+                return {"audio_id": audio_id, "status": "streaming", "bytes_ready": partial_path.stat().st_size}
         raise HTTPException(status_code=404, detail="Audio ID not found")
 
     status = job["status"]
