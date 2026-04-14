@@ -270,7 +270,15 @@ export default function Home() {
       >
         <VoiceModeToggle
           voiceEnabled={voiceEnabled}
-          onToggle={setVoiceEnabled}
+          onToggle={(v) => {
+            setVoiceEnabled(v);
+            // Reset view for next question — previous answer is already in history
+            setAnswer("");
+            setPassages([]);
+            setAudioId(null);
+            setStreamError(null);
+            setCurrentQuestion("");
+          }}
           disabled={isStreaming}
           textQuota={user?.text_quota ?? 0}
           voiceQuota={user?.voice_quota ?? 0}
