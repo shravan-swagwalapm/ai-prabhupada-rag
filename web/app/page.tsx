@@ -260,23 +260,22 @@ export default function Home() {
         </p>
       </div>
 
-      {/* Search input */}
+      {/* Search input + voice toggle (between input and FAQ cards) */}
       <QuestionInput
         onSubmit={handleSubmit}
         isLoading={isLoading}
         disabled={currentModeExhausted}
         voiceQuotaExhausted={voiceExhausted}
-      />
-
-      {/* Text / Voice mode toggle */}
-      <VoiceModeToggle
-        voiceEnabled={voiceEnabled}
-        onToggle={setVoiceEnabled}
-        disabled={isStreaming}
-        textQuota={user?.text_quota ?? 0}
-        voiceQuota={user?.voice_quota ?? 0}
-        voiceQuotaExhausted={voiceExhausted}
-      />
+      >
+        <VoiceModeToggle
+          voiceEnabled={voiceEnabled}
+          onToggle={setVoiceEnabled}
+          disabled={isStreaming}
+          textQuota={user?.text_quota ?? 0}
+          voiceQuota={user?.voice_quota ?? 0}
+          voiceQuotaExhausted={voiceExhausted}
+        />
+      </QuestionInput>
 
       {/* Error banner */}
       {streamError && (

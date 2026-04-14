@@ -7,6 +7,7 @@ interface Props {
   isLoading: boolean;
   disabled?: boolean;
   voiceQuotaExhausted?: boolean;
+  children?: React.ReactNode;
 }
 
 const EXAMPLE_QUESTIONS = [
@@ -22,6 +23,7 @@ export default function QuestionInput({
   isLoading,
   disabled,
   voiceQuotaExhausted = false,
+  children,
 }: Props) {
   const [question, setQuestion] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -234,6 +236,8 @@ export default function QuestionInput({
           </button>
         </div>
       </form>
+
+      {children}
 
       {/* Example question cards */}
       <div className="mt-6 grid grid-cols-1 gap-3 max-w-xl mx-auto">
