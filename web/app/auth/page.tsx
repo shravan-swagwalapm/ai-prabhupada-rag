@@ -140,7 +140,7 @@ export default function AuthPage() {
         </p>
 
         <p
-          className="mt-3 text-xs tracking-widest uppercase"
+          className="mt-3 text-sm tracking-widest uppercase"
           style={{ color: "var(--text-muted)" }}
         >
           Powered by AI · Grounded in scripture
@@ -187,7 +187,7 @@ export default function AuthPage() {
             </button>
           )}
 
-          <p className="text-xs" style={{ color: "var(--text-ghost)" }}>
+          <p className="text-sm" style={{ color: "var(--text-ghost)" }}>
             7 questions free · No credit card
           </p>
         </div>
@@ -197,7 +197,7 @@ export default function AuthPage() {
           className="absolute bottom-8 hidden sm:flex flex-col items-center gap-2"
           style={{ animation: "bounce-hint 2s ease-in-out infinite" }}
         >
-          <p className="text-xs tracking-wider" style={{ color: "var(--text-ghost)" }}>
+          <p className="text-sm tracking-wider" style={{ color: "var(--text-ghost)" }}>
             Discover more
           </p>
           <svg
@@ -275,7 +275,7 @@ export default function AuthPage() {
               }}
             >
               <div
-                className="text-xs font-sans tracking-widest uppercase mb-4"
+                className="text-sm font-sans tracking-widest uppercase mb-4"
                 style={{ color: "var(--gold-dim)" }}
               >
                 Step {item.step}
@@ -289,7 +289,7 @@ export default function AuthPage() {
               >
                 {item.title}
               </h3>
-              <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              <p className="text-base leading-relaxed" style={{ color: "var(--text-secondary)" }}>
                 {item.desc}
               </p>
             </div>
@@ -331,7 +331,7 @@ export default function AuthPage() {
               }}
             >
               <span
-                className="text-xs font-sans font-semibold tracking-widest uppercase block mb-1"
+                className="text-sm font-sans font-semibold tracking-widest uppercase block mb-1"
                 style={{ color: "var(--gold)" }}
               >
                 {s.code}
@@ -343,7 +343,7 @@ export default function AuthPage() {
                 {s.name}
               </span>
               <span
-                className="text-xs mt-1 block"
+                className="text-sm mt-1 block"
                 style={{ color: "var(--text-muted)" }}
               >
                 {s.count} passages
@@ -355,7 +355,7 @@ export default function AuthPage() {
         {/* Total badge */}
         <div className="flex justify-center mt-8">
           <div
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs tracking-wider uppercase"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm tracking-wider uppercase"
             style={{
               border: "1px solid rgba(201,168,76,0.2)",
               color: "var(--gold)",
@@ -442,7 +442,7 @@ export default function AuthPage() {
               Hear Prabhupada&apos;s voice
             </h3>
             <p
-              className="text-sm leading-relaxed mb-6"
+              className="text-base leading-relaxed mb-6"
               style={{ color: "var(--text-secondary)" }}
             >
               AI-cloned from original recordings using ElevenLabs.
@@ -470,7 +470,7 @@ export default function AuthPage() {
                 </svg>
               </div>
               <div>
-                <p className="text-xs font-sans" style={{ color: "var(--text-secondary)" }}>
+                <p className="text-sm font-sans" style={{ color: "var(--text-secondary)" }}>
                   Prabhupada is speaking...
                 </p>
                 <div
@@ -487,7 +487,7 @@ export default function AuthPage() {
                 </div>
               </div>
               <span
-                className="text-xs font-mono shrink-0"
+                className="text-sm font-mono shrink-0"
                 style={{ color: "var(--text-muted)" }}
               >
                 1:24 / 4:02
@@ -522,7 +522,7 @@ export default function AuthPage() {
             </p>
 
             <p
-              className="text-xs mb-6"
+              className="text-sm mb-6"
               style={{ color: "rgba(250,246,239,0.5)" }}
             >
               No credit card required
@@ -582,7 +582,7 @@ export default function AuthPage() {
       <footer className="px-4 pt-16 pb-6 text-center">
         <p
           className="font-sans"
-          style={{ color: "var(--text-muted)", fontSize: "13px", letterSpacing: "0.04em" }}
+          style={{ color: "var(--text-muted)", fontSize: "14px", letterSpacing: "0.04em" }}
         >
           Powered by 161,724 passages from Srila Prabhupada&apos;s complete works
         </p>

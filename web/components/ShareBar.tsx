@@ -49,19 +49,19 @@ export default function ShareBar({ answerText, question }: ShareBarProps) {
   return (
     <div className="flex gap-3 py-3 px-4 border-t"
          style={{ borderColor: 'var(--glass-border)', background: 'var(--glass)', backdropFilter: 'blur(12px)' }}>
-      <button onClick={handleCopy} className="font-display text-xs tracking-wider px-4 py-2 min-h-[44px] rounded-full border transition-colors"
+      <button onClick={handleCopy} className="font-display text-sm tracking-wider px-4 py-2 min-h-[44px] rounded-full border transition-colors"
               style={{ borderColor: 'var(--glass-border-hover)', color: copied ? 'var(--tulsi)' : 'var(--text-secondary)' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--card-hover)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = ''; }}>
         {copied ? 'Copied ✓' : 'Copy'}
       </button>
-      <button onClick={handleShare} className="font-display text-xs tracking-wider px-4 py-2 min-h-[44px] rounded-full border transition-colors"
+      <button onClick={handleShare} className="font-display text-sm tracking-wider px-4 py-2 min-h-[44px] rounded-full border transition-colors"
               style={{ borderColor: 'var(--glass-border-hover)', color: 'var(--text-secondary)' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--card-hover)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = ''; }}>
         Share
       </button>
-      <button onClick={handleTweet} className="font-display text-xs tracking-wider px-4 py-2 min-h-[44px] rounded-full border transition-colors"
+      <button onClick={handleTweet} className="font-display text-sm tracking-wider px-4 py-2 min-h-[44px] rounded-full border transition-colors"
               style={{ borderColor: 'var(--glass-border-hover)', color: 'var(--text-secondary)' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--card-hover)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = ''; }}>

@@ -641,7 +641,7 @@ export default function RichAnswer({ text, mode = "text", isStreaming }: Props) 
                       style={{
                         color: "#2C4A78",
                         fontWeight: 600,
-                        fontSize: 14,
+                        fontSize: 16,
                         borderTop: block.lines.length > 0 ? "1px solid rgba(201,168,76,0.15)" : undefined,
                         paddingTop: block.lines.length > 0 ? "0.75rem" : undefined,
                       }}
@@ -651,7 +651,7 @@ export default function RichAnswer({ text, mode = "text", isStreaming }: Props) 
                   )}
                   {block.ref && (
                     <p
-                      className="text-xs font-sans uppercase tracking-widest"
+                      className="text-sm font-sans uppercase tracking-widest"
                       style={{ color: "#8B7332" }}
                     >
                       {block.ref}

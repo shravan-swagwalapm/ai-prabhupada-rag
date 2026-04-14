@@ -78,7 +78,7 @@ export default function SubscribeGate({ quotaType, userEmail, textUsed, voiceUse
               className="w-full px-4 py-3 rounded-lg text-sm bg-transparent border outline-none focus:ring-2"
               style={{ borderColor: 'var(--glass-border-hover)', color: 'var(--text-body)', outlineColor: 'var(--gold)' }}
             />
-            {error && <p className="text-xs" style={{ color: '#e07050' }}>{error}</p>}
+            {error && <p className="text-sm" style={{ color: '#e07050' }}>{error}</p>}
             <button onClick={handleSubmit}
                     className="w-full py-3 rounded-lg font-display text-sm tracking-wider transition-colors"
                     style={{ background: 'var(--gold)', color: 'var(--sanctum)', minHeight: 44 }}
@@ -91,7 +91,7 @@ export default function SubscribeGate({ quotaType, userEmail, textUsed, voiceUse
 
         <button
           onClick={onDismiss}
-          className="mt-4 text-xs px-4 transition-colors"
+          className="mt-4 text-sm px-4 transition-colors"
           style={{ color: 'var(--text-ghost)', minHeight: 44 }}
           onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-ghost)'; }}

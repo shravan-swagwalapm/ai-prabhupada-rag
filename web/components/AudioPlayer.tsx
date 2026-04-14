@@ -316,7 +316,7 @@ export default function AudioPlayer({ audioId }: Props) {
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <p className="font-sans text-[13px] font-semibold truncate" style={{ color: "rgba(250,246,239,0.9)" }}>
+            <p className="font-sans text-sm font-semibold truncate" style={{ color: "rgba(250,246,239,0.9)" }}>
               {state === "generating" && "Generating Prabhupada\u2019s voice..."}
               {state === "ready" && "Listen to Prabhupada"}
               {state === "playing" && "Prabhupada is speaking..."}
@@ -360,7 +360,7 @@ export default function AudioPlayer({ audioId }: Props) {
               alignItems: "center",
               justifyContent: "center",
               color: currentSpeed === 1 ? "rgba(250,246,239,0.4)" : "#C9A84C",
-              fontSize: 12,
+              fontSize: 14,
               fontWeight: 700,
               fontFamily: "monospace",
               background: currentSpeed === 1 ? "transparent" : "rgba(201,168,76,0.1)",
@@ -374,7 +374,7 @@ export default function AudioPlayer({ audioId }: Props) {
           {/* Time */}
           {duration > 0 && (
             <span
-              className="text-[11px] font-sans shrink-0"
+              className="text-sm font-sans shrink-0"
               style={{
                 color: "rgba(250,246,239,0.4)",
                 fontVariantNumeric: "tabular-nums",

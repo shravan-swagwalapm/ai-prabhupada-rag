@@ -83,7 +83,7 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
         <p className="text-sm font-serif" style={{ color: "var(--gold)", letterSpacing: "0.06em" }}>
           All Sources
         </p>
-        <p className="text-xs font-sans mb-5" style={{ color: "var(--text-muted)" }}>
+        <p className="text-sm font-sans mb-5" style={{ color: "var(--text-muted)" }}>
           {passages.length} passages from {uniqueScriptures} scripture{uniqueScriptures !== 1 ? "s" : ""}
         </p>
 
@@ -119,7 +119,7 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
                     <span className="text-base shrink-0">{icon}</span>
                     <div className="min-w-0">
                       <span
-                        className="inline-block px-2.5 py-1 rounded-md text-xs font-sans font-medium"
+                        className="inline-block px-2.5 py-1 rounded-md text-sm font-sans font-medium"
                         style={{
                           color: svgColor.text,
                           background: svgColor.fill,
@@ -129,18 +129,18 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
                         {shortName}
                       </span>
                       {fullName !== shortName && (
-                        <p className="text-xs font-sans mt-1 truncate" style={{ color: "var(--text-muted)" }}>
+                        <p className="text-sm font-sans mt-1 truncate" style={{ color: "var(--text-muted)" }}>
                           {fullName.substring(fullName.indexOf(",") + 2)}
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs font-sans font-semibold" style={{ color: "var(--gold-dim)" }}>
+                    <span className="text-sm font-sans font-semibold" style={{ color: "var(--gold-dim)" }}>
                       {matchPct.toFixed(0)}%
                     </span>
                     <span
-                      className="text-xs transition-transform duration-200"
+                      className="text-sm transition-transform duration-200"
                       style={{
                         color: "var(--text-muted)",
                         transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
@@ -169,7 +169,7 @@ export default function SourceDrawer({ passages, isOpen, onClose }: SourceDrawer
                           }}
                         />
                       </div>
-                      <span className="text-xs font-sans font-semibold" style={{ color: relevanceColor }}>
+                      <span className="text-sm font-sans font-semibold" style={{ color: relevanceColor }}>
                         {matchPct.toFixed(0)}% relevance
                       </span>
                     </div>

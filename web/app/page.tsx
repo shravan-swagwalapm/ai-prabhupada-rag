@@ -280,7 +280,7 @@ export default function Home() {
             >
               Text
               <span
-                className="ml-2 text-xs"
+                className="ml-2 text-sm"
                 style={{ color: !voiceEnabled ? "var(--text-secondary)" : "var(--text-ghost)" }}
               >
                 {user?.text_quota ?? 0}
@@ -305,7 +305,7 @@ export default function Home() {
               </svg>
               Voice
               <span
-                className="text-xs"
+                className="text-sm"
                 style={{ color: voiceEnabled ? "var(--text-secondary)" : "var(--text-ghost)" }}
               >
                 {user?.voice_quota ?? 0}
@@ -398,7 +398,7 @@ export default function Home() {
       {/* Footer */}
       <footer
         className="mt-auto pt-16 pb-6 text-center font-sans"
-        style={{ color: "var(--text-muted)", fontSize: "13px", letterSpacing: "0.04em" }}
+        style={{ color: "var(--text-muted)", fontSize: "14px", letterSpacing: "0.04em" }}
       >
         Powered by FAISS + Claude Sonnet 4.5 + ElevenLabs
       </footer>
