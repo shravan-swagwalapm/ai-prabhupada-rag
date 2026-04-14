@@ -66,13 +66,14 @@ export default function Home() {
       setAudioId(null);
       setCurrentQuestion(question);
 
+      // Clean up previous gesture Audio before creating a new one
+      if (gestureAudioRef.current) {
+        gestureAudioRef.current.pause();
+        gestureAudioRef.current.src = "";
+      }
       // Create silent Audio element during user gesture to preserve mobile auto-play context.
       // Browsers allow audio.play() later if the Audio was created in a user-initiated event handler.
-      if (voiceEnabled) {
-        gestureAudioRef.current = new Audio();
-      } else {
-        gestureAudioRef.current = null;
-      }
+      gestureAudioRef.current = voiceEnabled ? new Audio() : null;
 
       const cleanup = queryStream(
         question,

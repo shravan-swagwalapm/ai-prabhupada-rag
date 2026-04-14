@@ -9,7 +9,7 @@ interface Props {
   gestureAudio?: HTMLAudioElement | null;
 }
 
-type AudioState = "idle" | "generating" | "streaming" | "ready" | "playing" | "paused" | "error";
+type AudioState = "idle" | "generating" | "ready" | "playing" | "paused" | "error";
 
 /** Backend status — tracks what the server reports separately from playback state. */
 type BackendStatus = "pending" | "streaming" | "ready" | "error" | "unknown";
@@ -101,6 +101,8 @@ export default function AudioPlayer({ audioId, gestureAudio }: Props) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollStartRef = useRef<number>(0);
   const animFrameRef = useRef<number>(0);
+  /** Ref to avoid stale closure of updateProgressLoop in rAF callbacks. */
+  const updateProgressLoopRef = useRef<() => void>(() => {});
   /** Track whether we've already started auto-play for this audioId. */
   const autoPlayFiredRef = useRef<string | null>(null);
   /** Ref to current backend status — used in audio event handlers to avoid stale closures. */
@@ -173,7 +175,7 @@ export default function AudioPlayer({ audioId, gestureAudio }: Props) {
         setState("ready");
       });
       setState("playing");
-      animFrameRef.current = requestAnimationFrame(updateProgressLoop);
+      animFrameRef.current = requestAnimationFrame(() => updateProgressLoopRef.current());
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [gestureAudio, currentSpeed]
@@ -279,9 +281,10 @@ export default function AudioPlayer({ audioId, gestureAudio }: Props) {
       }
     }
     if (audio && !audio.paused && !audio.ended) {
-      animFrameRef.current = requestAnimationFrame(updateProgressLoop);
+      animFrameRef.current = requestAnimationFrame(() => updateProgressLoopRef.current());
     }
   };
+  updateProgressLoopRef.current = updateProgressLoop;
 
   const togglePlay = () => {
     if (!audioId || state === "generating" || state === "error") return;
@@ -314,7 +317,7 @@ export default function AudioPlayer({ audioId, gestureAudio }: Props) {
         }
       });
       setState("playing");
-      animFrameRef.current = requestAnimationFrame(updateProgressLoop);
+      animFrameRef.current = requestAnimationFrame(() => updateProgressLoopRef.current());
     }
   };
 
@@ -340,6 +343,7 @@ export default function AudioPlayer({ audioId, gestureAudio }: Props) {
       <div className="w-full max-w-3xl mx-auto mt-4">
         <div
           className="overflow-hidden px-5 py-4"
+          role="alert"
           style={{
             background: "linear-gradient(135deg, var(--krishna-blue), var(--krishna-blue-dark))",
             borderRadius: 16,
@@ -367,9 +371,7 @@ export default function AudioPlayer({ audioId, gestureAudio }: Props) {
   // Status label
   const statusLabel = (() => {
     if (state === "generating") return "Generating Prabhupada\u2019s voice...";
-    if (state === "playing" && isStreaming) return "Prabhupada is speaking...";
     if (state === "playing") return "Prabhupada is speaking...";
-    if (state === "streaming") return "Preparing voice...";
     if (state === "ready") return "Listen to Prabhupada";
     if (state === "paused") return "Paused";
     return "";
