@@ -921,12 +921,18 @@ async def query_stream(
 
 # ── Audio Endpoints ──────────────────────────────────────────────────────────
 
+STREAM_POLL_TIMEOUT_S = 300  # Max time to poll for streaming audio (5 minutes)
+
 def _stream_partial_audio(audio_id: str):
     """Generator that yields bytes from a .partial.mp3 as it grows, stopping when done."""
     partial_path = AUDIO_CACHE_DIR / f"{audio_id}.partial.mp3"
     bytes_sent = 0
+    started = time.monotonic()
 
     while True:
+        if time.monotonic() - started > STREAM_POLL_TIMEOUT_S:
+            logger.warning("Stream poll timeout for audio %s after %ds", audio_id, STREAM_POLL_TIMEOUT_S)
+            return
         job = _get_audio_job(audio_id)
         if job is None:
             return
