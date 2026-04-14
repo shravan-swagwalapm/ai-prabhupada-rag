@@ -8,6 +8,7 @@ interface Props {
   disabled?: boolean;
   voiceQuotaExhausted?: boolean;
   children?: React.ReactNode;
+  hideExamples?: boolean;
 }
 
 const EXAMPLE_QUESTIONS = [
@@ -24,6 +25,7 @@ export default function QuestionInput({
   disabled,
   voiceQuotaExhausted = false,
   children,
+  hideExamples = false,
 }: Props) {
   const [question, setQuestion] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -239,8 +241,8 @@ export default function QuestionInput({
 
       {children}
 
-      {/* Example question cards */}
-      <div className="mt-6 grid grid-cols-1 gap-3 max-w-xl mx-auto">
+      {/* Example question cards — hidden when answer is active */}
+      {!hideExamples && <div className="mt-6 grid grid-cols-1 gap-3 max-w-xl mx-auto">
         {EXAMPLE_QUESTIONS.map((eq, i) => {
           const accents = ["var(--krishna-blue)", "var(--gold)", "var(--vermillion)"];
           return (
@@ -265,7 +267,7 @@ export default function QuestionInput({
             </button>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }

@@ -219,9 +219,9 @@ export default function AudioPlayer({ audioId, gestureAudio }: Props) {
           schedulePoll();
         } else if (status.status === "ready") {
           setBackendStatus("ready");
-          // If we were already playing (streaming), just update status — don't re-create audio
+          // Auto-play if we haven't already (e.g., audio skipped "streaming" state)
           if (autoPlayFiredRef.current !== audioId) {
-            setState("ready");
+            startStreaming(audioId);
           }
         } else if (status.status === "error" || status.status === "not_found") {
           setBackendStatus("error");
@@ -245,7 +245,12 @@ export default function AudioPlayer({ audioId, gestureAudio }: Props) {
       }
       if (status?.status === "ready") {
         setBackendStatus("ready");
-        setState("ready");
+        // Auto-play even when audio went straight to "ready" (skipped streaming)
+        if (autoPlayFiredRef.current !== audioId) {
+          startStreaming(audioId);
+        } else {
+          setState("ready");
+        }
         return;
       }
       if (status?.status === "error" || status?.status === "not_found") {

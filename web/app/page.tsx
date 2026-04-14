@@ -266,6 +266,7 @@ export default function Home() {
         isLoading={isLoading}
         disabled={currentModeExhausted}
         voiceQuotaExhausted={voiceExhausted}
+        hideExamples={!!answer || isStreaming || isSearching}
       >
         <VoiceModeToggle
           voiceEnabled={voiceEnabled}
