@@ -138,6 +138,7 @@ def get_anthropic_client():
             _anthropic_client = anthropic.Anthropic(
                 api_key=api_key,
                 timeout=ANTHROPIC_TIMEOUT,
+                default_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
             )
             logger.info("Anthropic client initialized (model: %s)", ANSWER_MODEL)
             return _anthropic_client
@@ -217,7 +218,7 @@ def generate_answer(question: str, passages: list, mode: str = "concise") -> str
         response = client.messages.create(
             model=ANSWER_MODEL,
             max_tokens=2048 if mode == "full" else 1024,
-            system=system_prompt,
+            system=[{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user_message}],
         )
     except Exception as e:
@@ -246,7 +247,7 @@ def generate_answer(question: str, passages: list, mode: str = "concise") -> str
             response = client.messages.create(
                 model=ANSWER_MODEL,
                 max_tokens=1024,
-                system=system_prompt,
+                system=[{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
                 messages=[{"role": "user", "content": retry_message}],
             )
             answer = response.content[0].text
@@ -289,7 +290,7 @@ def generate_answer_streaming(question: str, passages: list, mode: str = "concis
         with client.messages.stream(
             model=ANSWER_MODEL,
             max_tokens=2048 if mode == "full" else 1024,
-            system=system_prompt,
+            system=[{"type": "text", "text": system_prompt, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user_message}],
         ) as stream:
             for text in stream.text_stream:

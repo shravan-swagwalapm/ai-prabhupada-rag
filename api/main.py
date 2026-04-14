@@ -796,13 +796,13 @@ async def query_stream(
 
         if _search_with_embedding_func:
             try:
-                raw_results, embedding = _search_with_embedding_func(question, top_k=top_k)
+                raw_results, embedding = await asyncio.to_thread(_search_with_embedding_func, question, top_k)
             except Exception as e:
                 logger.warning("Embedding search failed: %s", e)
 
         if raw_results is None:
             try:
-                raw_results = list(_search_func(question, top_k=top_k))
+                raw_results = await asyncio.to_thread(lambda: list(_search_func(question, top_k=top_k)))
             except Exception as e:
                 logger.error("Search failed in stream: %s", e)
                 yield f"data: {json_module.dumps({'type': 'error', 'message': 'Search failed'})}\n\n"
